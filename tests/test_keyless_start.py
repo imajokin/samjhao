@@ -67,13 +67,20 @@ class KeylessStart(unittest.TestCase):
         self.assertTrue(config["live_demo_url"].startswith("https://"))
 
     def test_key_routes_answer_cleanly(self):
-        paths = ("/api/session/start", "/api/session/abc/turn", "/api/transcribe", "/api/speak")
+        paths = ("/api/session/start", "/api/session/abc/turn", "/api/session/abc/finish",
+                 "/api/transcribe", "/api/speak")
         for path in paths:
             reply = self.client.post(path, json={})
             self.assertEqual(reply.status_code, 503, path)
             body = reply.json()
             self.assertEqual(body["error"], "keys_not_set", path)
             self.assertTrue(body["missing"], path)
+
+
+    def test_full_explanation_route_answers_cleanly(self):
+        reply = self.client.get("/api/session/abc/recap")
+        self.assertEqual(reply.status_code, 503)
+        self.assertEqual(reply.json()["error"], "keys_not_set")
 
 
 class PartialKeys(unittest.TestCase):

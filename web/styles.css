@@ -526,3 +526,17 @@ body {
 
 .pitch-en { margin-bottom: 0; }
 .how-steps { margin-top: 24px; }
+
+/* ----- Keep the mic on the first screenful of a small phone ----- */
+
+#home { padding-top: 12px; }
+#home .brand h1 { font-size: 1.7rem; }
+#home .tagline { margin: 0 0 10px; font-size: 0.95rem; }
+#home .pitch { padding: 10px 14px; margin-bottom: 12px; }
+#home .pitch-hi { font-size: 1.02rem; }
+#home .pitch-en { font-size: 0.9rem; }
+#home .classes { margin-bottom: 12px; padding: 6px 8px 10px; }
+#home .classes span { min-width: 44px; padding: 8px 10px; }
+#home .prompt-hi { font-size: 1.2rem; }
+#home .prompt-en { margin: 4px 0 12px; font-size: 0.95rem; }
+#home .mic { width: 100px; height: 100px; }

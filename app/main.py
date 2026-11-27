@@ -9,6 +9,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.concurrency import run_in_threadpool
+import hashlib
+import re
 from html import escape
 
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -49,6 +51,22 @@ class SpeakBody(BaseModel):
 
 
 MAX_AUDIO_BYTES = 4 * 1024 * 1024  # one piece of up to 30 seconds is far smaller
+
+
+def versioned_home() -> str:
+    """The home page, with a version stamp added to each page file it loads.
+
+    The stamp changes whenever any page file changes, so a browser can never
+    mix a new page with an old, remembered copy of a script.
+    """
+    stamp = hashlib.sha256()
+    for path in sorted(WEB_DIR.glob("*")):
+        if path.is_file():
+            stamp.update(path.read_bytes())
+    version = stamp.hexdigest()[:10]
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    return re.sub(r'(href|src)="((?:styles\.css|api\.js|audio\.js|app\.js))"',
+                  rf'\1="\2?v={version}"', page)
 
 
 def error(status: int, code: str, **extra) -> JSONResponse:
@@ -99,6 +117,19 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
                          text_hi=say("daily_cap", "hindi"), video_url=settings.video_url)
         return error(503, "service_down", service=problem.service,
                      text=say("service_down", lang, voice))
+
+    home_page = versioned_home()
+
+    @app.middleware("http")
+    async def always_check_for_new_files(request: Request, call_next):
+        # Tell browsers to ask before reusing a remembered copy of any file.
+        response = await call_next(request)
+        response.headers.setdefault("Cache-Control", "no-cache")
+        return response
+
+    @app.get("/", response_class=HTMLResponse)
+    def home() -> str:
+        return home_page
 
     @app.get("/healthz")
     def healthz() -> dict:

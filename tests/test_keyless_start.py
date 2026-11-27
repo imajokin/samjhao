@@ -39,6 +39,13 @@ class KeylessStart(unittest.TestCase):
         self.assertIn("Samjhao", reply.text)
         self.assertIn('id="notice"', reply.text)
 
+    def test_browser_cannot_mix_old_and_new_page_files(self):
+        home = self.client.get("/")
+        for name in ("styles.css", "api.js", "audio.js", "app.js"):
+            self.assertRegex(home.text, name.replace(".", r"\.") + r"\?v=[0-9a-f]{10}")
+        self.assertEqual(home.headers["cache-control"], "no-cache")
+        self.assertEqual(self.client.get("/audio.js").headers["cache-control"], "no-cache")
+
     def test_page_files_load(self):
         for name in ("styles.css", "app.js", "api.js", "audio.js"):
             self.assertEqual(self.client.get("/" + name).status_code, 200, name)

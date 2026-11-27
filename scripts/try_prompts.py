@@ -29,7 +29,7 @@ CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 # MODELS=model-one,model-two python3 scripts/try_prompts.py
 MODELS = [
     m.strip()
-    for m in os.environ.get("MODELS", "anthropic/claude-haiku-5.5").split(",")
+    for m in os.environ.get("MODELS", "anthropic/claude-sonnet-5.5").split(",")
     if m.strip()
 ]
 RUNS = int(os.environ.get("RUNS", "1"))
@@ -172,9 +172,7 @@ def key_points_prompt(sample: dict) -> str:
     return prompts.KEY_POINTS_PROMPT.format(
         topic=sample["topic"],
         level=sample["level"],
-        language="Hindi mixed with English",
         confirmed="yes",
-        language_rules=prompts.LANGUAGE_RULES,
     )
 
 
@@ -238,10 +236,7 @@ def print_report(results: list[dict]) -> None:
             print(f"  First gap: point {judgement.get('first_gap_id')}")
             print(f"  Question:  {judgement.get('follow_up')}")
             gap = next((p for p in result["key_points"] if p["id"] == judgement.get("first_gap_id")), None)
-            if gap:
-                print(f"  Ready question: {gap.get('question')}")
-                print(f"  Hint:           {gap.get('hint')}")
-                print(f"  Explanation:    {gap.get('explanation')}")
+            print(f"  Hint:      {judgement.get('hint')}")
             print(
                 f"  Time: setup {result['setup_seconds']}s, turn {result['turn_seconds']}s"
                 f" | Cost: setup ${result['setup_cost']:.5f}, turn ${result['turn_cost']:.5f}"

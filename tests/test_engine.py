@@ -14,9 +14,12 @@ LONG = "the moon goes around the earth and we see its lit half"
 
 def moon_points() -> list[KeyPoint]:
     return [
-        KeyPoint(1, "The moon reflects sunlight.", question="Q1?", hint="H1.", explanation="E1."),
-        KeyPoint(2, "Half the moon is always lit.", question="Q2?", hint="H2.", explanation="E2."),
-        KeyPoint(3, "The moon orbits the Earth.", question="Q3?", hint="H3.", explanation="E3."),
+        KeyPoint(1, "The moon reflects sunlight.", question="Q1?", hint="H1.",
+                 hint2="H1 stronger.", explanation="E1."),
+        KeyPoint(2, "Half the moon is always lit.", question="Q2?", hint="H2.",
+                 hint2="H2 stronger.", explanation="E2."),
+        KeyPoint(3, "The moon orbits the Earth.", question="Q3?", hint="H3.",
+                 hint2="H3 stronger.", explanation="E3."),
     ]
 
 
@@ -28,9 +31,12 @@ class FakeJudge:
         self.turns = list(turns or [])
         self.plan_calls = []
 
-    def make_key_points(self, topic, level, language, confirmed):
+    def make_key_points(self, topic, level, confirmed):
         self.plan_calls.append((topic, level, confirmed))
         return self.plans.pop(0)
+
+    def write_support(self, session, point):
+        self.support_calls = getattr(self, "support_calls", 0) + 1
 
     def judge_turn(self, session, transcript):
         return self.turns.pop(0)
@@ -91,24 +97,33 @@ class CoreFlow(unittest.TestCase):
         self.assertEqual(reply["action"], "hint")
         self.assertIn("H3.", reply["text"])
         self.assertIn("Q?", reply["text"])
+        self.assertIn("कोशिश", reply["text"])  # the nudge to try
         reply = tutor.turn(session, "it goes around the earth")
         self.assertEqual(reply["action"], "done")
         self.assertEqual(results(session), [GREEN, GREEN, AMBER])
         self.assertNotIn("शाबाश", reply["text"])
 
-    def test_two_misses_then_app_explains(self):
+    def test_two_hints_then_the_app_explains(self):
         tutor, session = started([
             verdict(covered=(1,), gap=2, follow_up="Q2 from judge?"),
+            verdict(covered=(1,), gap=2),
             verdict(covered=(1,), gap=2),
             verdict(covered=(1,), gap=2),
             verdict(covered=(1, 3)),
         ])
         tutor.turn(session, LONG)
-        self.assertEqual(tutor.turn(session, "not sure really")["action"], "hint")
-        reply = tutor.turn(session, "still a guess")
-        self.assertEqual(reply["action"], "app_explains")
-        self.assertIn("E2.", reply["text"])
-        self.assertIn("Q3?", reply["text"])  # moves on to the next gap
+        first = tutor.turn(session, "not sure really")
+        self.assertEqual(first["action"], "hint")
+        self.assertIn("H2.", first["text"])  # the gentle hint
+        second = tutor.turn(session, "still a guess")
+        self.assertEqual(second["action"], "hint")
+        self.assertIn("H2 stronger.", second["text"])  # the stronger hint
+        self.assertIn("हार मत मानो", second["text"])  # do not give up yet
+        self.assertIsNone(session.point(2).result)  # still open
+        third = tutor.turn(session, "another guess")
+        self.assertEqual(third["action"], "app_explains")
+        self.assertIn("E2.", third["text"])
+        self.assertIn("Q3?", third["text"])  # moves on to the next gap
         self.assertEqual(session.point(2).result, AMBER)
         reply = tutor.turn(session, "it orbits the earth")
         self.assertEqual(reply["action"], "done")
@@ -119,16 +134,20 @@ class CoreFlow(unittest.TestCase):
             verdict(covered=(1, 2), gap=3, follow_up="Q?"),
             verdict(covered=(1, 2), gap=3),
             verdict(covered=(1, 2), gap=3),
+            verdict(covered=(1, 2), gap=3),
         ])
         tutor.turn(session, LONG)
         tutor.turn(session, "guess one")
-        reply = tutor.turn(session, "guess two")
+        tutor.turn(session, "guess two")
+        reply = tutor.turn(session, "guess three")
         self.assertEqual(reply["action"], "done")
         self.assertEqual(session.point(3).result, AMBER)
 
 
-class DontKnow(unittest.TestCase):
-    def test_pata_nahi_gives_hint_and_uses_no_try(self):
+class GivingUp(unittest.TestCase):
+    """The learner may give up, but is nudged to try twice first."""
+
+    def test_pata_nahi_gets_a_nudge_and_a_hint_not_the_answer(self):
         tutor, session = started([
             verdict(covered=(1, 2), gap=3, follow_up="Q?"),
             verdict(covered=(1, 2), gap=3, dont_know=True),
@@ -136,42 +155,49 @@ class DontKnow(unittest.TestCase):
         tutor.turn(session, LONG)
         reply = tutor.turn(session, "pata nahi")
         self.assertEqual(reply["action"], "hint")
-        self.assertEqual(session.point(3).tries, 0)
+        self.assertNotIn("E3.", reply["text"])
+        self.assertIsNone(session.point(3).result)
 
-    def test_pata_nahi_twice_makes_the_app_explain(self):
+    def test_pata_nahi_three_times_makes_the_app_explain(self):
         tutor, session = started([
             verdict(covered=(1, 2), gap=3, follow_up="Q?"),
             verdict(covered=(1, 2), gap=3, dont_know=True),
             verdict(covered=(1, 2), gap=3, dont_know=True),
-        ])
-        tutor.turn(session, LONG)
-        tutor.turn(session, "pata nahi")
-        reply = tutor.turn(session, "pata nahi")
-        self.assertEqual(reply["action"], "done")
-        self.assertIn("E3.", reply["text"])
-        self.assertEqual(session.point(3).result, AMBER)
-
-    def test_after_a_pata_nahi_hint_two_real_tries_remain(self):
-        tutor, session = started([
-            verdict(covered=(1, 2), gap=3, follow_up="Q?"),
             verdict(covered=(1, 2), gap=3, dont_know=True),
-            verdict(covered=(1, 2), gap=3),
-            verdict(covered=(1, 2), gap=3),
         ])
         tutor.turn(session, LONG)
         self.assertEqual(tutor.turn(session, "pata nahi")["action"], "hint")
-        reply = tutor.turn(session, "first real try")
-        self.assertEqual(reply["action"], "follow_up")
-        self.assertIn("थोड़ा और", reply["text"])
-        self.assertEqual(tutor.turn(session, "second real try")["action"], "done")
+        second = tutor.turn(session, "pata nahi")
+        self.assertEqual(second["action"], "hint")
+        self.assertIn("हार मत मानो", second["text"])
+        reply = tutor.turn(session, "pata nahi")
+        self.assertEqual(reply["action"], "done")
+        self.assertIn("E3.", reply["text"])
+        self.assertIn("अच्छी कोशिश", reply["text"])
         self.assertEqual(session.point(3).result, AMBER)
 
-    def test_silence_after_a_question_gives_the_hint(self):
+    def test_give_up_button_works_like_pata_nahi_without_the_judge(self):
         tutor, session = started([verdict(covered=(1, 2), gap=3, follow_up="Q?")])
         tutor.turn(session, LONG)
-        reply = tutor.turn(session, "", silent=True)
-        self.assertEqual(reply["action"], "hint")
-        self.assertEqual(session.point(3).tries, 0)
+        first = tutor.turn(session, "", silent=True)
+        self.assertEqual(first["action"], "hint")
+        self.assertIn("H3.", first["text"])
+        second = tutor.turn(session, "", silent=True)
+        self.assertEqual(second["action"], "hint")
+        self.assertIn("H3 stronger.", second["text"])
+        third = tutor.turn(session, "", silent=True)
+        self.assertEqual(third["action"], "done")
+        self.assertEqual(session.point(3).result, AMBER)
+
+    def test_the_same_hint_is_never_given_twice(self):
+        again = verdict(covered=(1, 2), gap=3)
+        again.hint = "H3."  # the judge repeats the hint already given
+        tutor, session = started([verdict(covered=(1, 2), gap=3, follow_up="Q?"), again])
+        tutor.turn(session, LONG)
+        tutor.turn(session, "", silent=True)  # gives "H3."
+        reply = tutor.turn(session, "a guess")
+        self.assertIn("H3 stronger.", reply["text"])
+        self.assertEqual(session.point(3).hints, ["H3.", "H3 stronger."])
 
 
 class GapOrder(unittest.TestCase):
@@ -209,6 +235,14 @@ class GapOrder(unittest.TestCase):
 
 
 class HintLanguage(unittest.TestCase):
+    def test_help_text_is_written_once_per_point_and_language(self):
+        tutor, session = started([verdict(covered=(1, 2), gap=3, follow_up="Q?")])
+        tutor.turn(session, LONG)
+        tutor.turn(session, "", silent=True)
+        tutor.turn(session, "", silent=True)
+        self.assertEqual(tutor.judge.support_calls, 1)
+        self.assertEqual(session.point(3).support_lang, session.lang)
+
     def test_hint_from_the_latest_turn_replaces_the_starting_one(self):
         first = verdict(covered=(1, 2), gap=3, follow_up="Q?")
         first.hint, first.explanation = "नया hint.", "नई explanation."
@@ -247,7 +281,7 @@ class HearingProblems(unittest.TestCase):
         reply = tutor.turn(session, "what is for lunch today")
         self.assertEqual(reply["action"], "off_topic")
         self.assertIn("Q?", reply["text"])
-        self.assertEqual(session.point(3).tries, 0)
+        self.assertEqual(session.point(3).hints, [])
 
 
 class StartingATopic(unittest.TestCase):

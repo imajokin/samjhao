@@ -15,14 +15,17 @@ class KeyPoint:
     id: int
     statement: str
     common_mistake: str = ""
-    question: str = ""  # a ready question that leads toward the idea
-    hint: str = ""
+    # Help text in the learner's language, written when first needed:
+    support_lang: str = ""  # the language the four texts below are written in
+    question: str = ""  # a question that leads toward the idea
+    hint: str = ""  # a gentle hint: where to look
+    hint2: str = ""  # a stronger hint: an everyday example, just short of the answer
     explanation: str = ""
     # What has happened in this session:
     result: str | None = None  # None while open, then GREEN or AMBER
     last_status: str = "missing"  # the judge's latest word: covered, missing, wrong
-    tries: int = 0  # real tries used on the follow-up question (two allowed)
-    hint_given: bool = False
+    fresh_hint: str = ""  # the judge's newest hint, written for the learner's last words
+    hints: list[str] = field(default_factory=list)  # the hints given so far (two allowed)
 
     @property
     def closed(self) -> bool:
@@ -102,8 +105,10 @@ class Judge(Protocol):
     with no keys.
     """
 
-    def make_key_points(
-        self, topic: str, level: str, language: str, confirmed: bool
-    ) -> TopicPlan: ...
+    def make_key_points(self, topic: str, level: str, confirmed: bool) -> TopicPlan: ...
 
     def judge_turn(self, session: Session, transcript: str) -> Judgement: ...
+
+    def write_support(self, session: Session, point: KeyPoint) -> None:
+        """Fills the point's question, hints and explanation in session.lang."""
+        ...

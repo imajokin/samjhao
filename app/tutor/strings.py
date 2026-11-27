@@ -98,6 +98,43 @@ STRINGS = {
         "telugu": "మంచి ప్రయత్నం. నువ్వు సొంతంగా ఏ points వివరించావో చూద్దాం.",
         "kannada": "ಒಳ್ಳೆಯ ಪ್ರಯತ್ನ. ನೀನೇ ಯಾವ points ವಿವರಿಸಿದೆ ಎಂದು ನೋಡೋಣ.",
     },
+    # Said before the first hint: it is fine not to know, try once.
+    "nudge_first": {
+        "hindi": "कोई बात नहीं, यह सोचने वाली बात है। एक बार कोशिश करके देखो।",
+        "english": "No problem, this one needs some thought. Give it one try.",
+        "punjabi": "ਕੋਈ ਗੱਲ ਨਹੀਂ, ਇਹ ਸੋਚਣ ਵਾਲੀ ਗੱਲ ਹੈ। ਇੱਕ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਕਰਕੇ ਵੇਖੋ।",
+        "telugu": "పర్వాలేదు, ఇది ఆలోచించాల్సిన విషయం. ఒకసారి ప్రయత్నించి చూడు.",
+        "kannada": "ಪರವಾಗಿಲ್ಲ, ಇದು ಯೋಚಿಸಬೇಕಾದ ವಿಷಯ. ಒಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ ನೋಡು.",
+    },
+    # Said before the second hint: do not give up yet.
+    "nudge_again": {
+        "hindi": "इतनी जल्दी हार मत मानो, तुम पास पहुँच रहे हो। बस एक बार और कोशिश करो।",
+        "english": "Do not give up yet, you are getting close. Try just once more.",
+        "punjabi": "ਇੰਨੀ ਛੇਤੀ ਹਾਰ ਨਾ ਮੰਨੋ, ਤੁਸੀਂ ਨੇੜੇ ਪਹੁੰਚ ਰਹੇ ਹੋ। ਬੱਸ ਇੱਕ ਵਾਰ ਹੋਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+        "telugu": "ఇంత త్వరగా వదిలేయకు, నువ్వు దగ్గరికి వస్తున్నావు. ఇంకొక్కసారి ప్రయత్నించు.",
+        "kannada": "ಇಷ್ಟು ಬೇಗ ಬಿಟ್ಟುಕೊಡಬೇಡ, ನೀನು ಹತ್ತಿರ ಬರುತ್ತಿದ್ದೀಯ. ಇನ್ನೊಮ್ಮೆ ಮಾತ್ರ ಪ್ರಯತ್ನಿಸು.",
+    },
+    # Said when both hints are used and the app explains the point itself.
+    "explain_lead": {
+        "hindi": (
+            "तुमने अच्छी कोशिश की। यह वाला मैं समझा देता हूँ।",
+            "तुमने अच्छी कोशिश की। यह वाला मैं समझा देती हूँ।",
+        ),
+        "english": "You tried well. Let me explain this one.",
+        "punjabi": (
+            "ਤੁਸੀਂ ਚੰਗੀ ਕੋਸ਼ਿਸ਼ ਕੀਤੀ। ਇਹ ਵਾਲਾ ਮੈਂ ਸਮਝਾ ਦਿੰਦਾ ਹਾਂ।",
+            "ਤੁਸੀਂ ਚੰਗੀ ਕੋਸ਼ਿਸ਼ ਕੀਤੀ। ਇਹ ਵਾਲਾ ਮੈਂ ਸਮਝਾ ਦਿੰਦੀ ਹਾਂ।",
+        ),
+        "telugu": "నువ్వు బాగా ప్రయత్నించావు. ఇది నేను వివరిస్తాను.",
+        "kannada": "ನೀನು ಚೆನ್ನಾಗಿ ಪ್ರಯತ್ನಿಸಿದೆ. ಇದನ್ನು ನಾನು ವಿವರಿಸುತ್ತೇನೆ.",
+    },
+    "give_up_button": {
+        "hindi": "मुझे नहीं पता",
+        "english": "I don't know",
+        "punjabi": "ਮੈਨੂੰ ਨਹੀਂ ਪਤਾ",
+        "telugu": "నాకు తెలియదు",
+        "kannada": "ನನಗೆ ಗೊತ್ತಿಲ್ಲ",
+    },
     "not_heard": {
         "hindi": "आवाज़ साफ़ नहीं आई। Phone पास लाकर फिर से बोलो।",
         "english": "I could not hear clearly. Bring the phone closer and say it again.",

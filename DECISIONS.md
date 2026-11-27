@@ -26,13 +26,18 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Voices: "shubh" (male) and "ritu" (female), on Sarvam's bulbul:v3 model. | Shubham picked them by ear from five samples. These named voices speak all five languages. |
 | 27 Nov 2026 | Long recordings are cut in the browser, not on the server: the recorder starts a new piece at a pause after about 20 seconds (28 at most), and each piece is sent for transcription while the learner is still talking. | Same idea Shubham approved (pieces under 30 seconds), but it needs no audio-conversion software in the container and the transcript is ready sooner. Proposed by Claude; tell Shubham. |
 | 27 Nov 2026 | Transcript style: Sarvam's "codemix" mode. | Tested on 27 Nov: it writes Hindi in Hindi script and English words in English letters ("Plants sunlight से खाना बनाते हैं"), which is what the screen should show and what the judge reads best. The other modes wrote English words in Hindi script, or everything in English letters. |
+| 27 Nov 2026 | Direction confirmed: the learner explains and Samjhao checks (option A). Samjhao is not a tutor that teaches first. | Shubham reviewed the idea again on 27 Nov: many tutors that explain already exist. |
+| 27 Nov 2026 | Judging model switched to Claude Sonnet 5.5, with thinking on. | Shubham's decision. Haiku 5.5 credited "the sun goes around the Earth" in 7 of 8 runs; Sonnet was correct on every sample and about 3 s faster per turn. About $0.06 per session. Shubham will add credits. |
+| 27 Nov 2026 | Each key point now gets two hints before Samjhao explains it. A miss, "I don't know", silence and the new "मुझे नहीं पता" button all count the same: a nudge to try once more, then the next hint. The second hint is stronger (an everyday example). Changes HANDOVER.md 6.2 (one hint, two tries). | Shubham tried the app on 27 Nov: learners must be able to give up, but not at the first difficulty, and the hints were not good enough. |
+| 27 Nov 2026 | Hints are written fresh on every turn by the judge, starting from what the learner just said. Ready hints from the start of the session are only the backup. | Shubham found the hints too weak. |
+| 27 Nov 2026 | The home screen now explains the idea in three lines before asking for a topic. | Shubham found the opening confusing ("why am I explaining?"). |
+| 27 Nov 2026 | The live link will be on Shubham's own domain, 14061406.xyz, through Cloudflare. Not on Railway, which is for office work. | Shubham's decision. The exact set-up is to be confirmed with him. |
 
 ## Open (waiting for Shubham)
 
-- Judging model: Haiku 5.5 credited a wrong explanation typed in English letters (27 Nov). Switch to Sonnet 5.5 (recommended), GPT-6 Luna, or stay?
-- Thinking off for preparing a topic only?
-- Who can check the Punjabi, Telugu and Kannada phrases and test with a real speaker.
-- Topics to decline, session limits, hosting, people and proof: asked as each part comes up.
+- How the live link is set up on 14061406.xyz (which machine runs the container).
+- Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).
+- Topics to decline, session limits, people and proof: asked as each part comes up.
 
 ## Checked against live documentation (27 Nov 2026)
 

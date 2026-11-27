@@ -29,6 +29,17 @@
       </p>
     </section>
 
+    <!-- What Samjhao is, in three lines, before anything is asked. -->
+    <section class="pitch">
+      <p class="pitch-hi" lang="hi">समझ आया है, या सिर्फ़ याद है? किसी को समझाकर देखो, तुरंत पता चल जाएगा।</p>
+      <p class="pitch-en" lang="en">Did you really understand it, or only memorise it? Explain it to someone and you will know.</p>
+      <ol class="steps">
+        <li><strong>तुम समझाओ।</strong> <span>You explain any topic aloud, in your own words.</span></li>
+        <li><strong>Samjhao सुनता है</strong> और वही हिस्सा पूछता है जो छूट गया। <span>Samjhao listens and asks about the part you skipped or mixed up.</span></li>
+        <li><strong>अटक गए? Hint मिलेगा, जवाब नहीं।</strong> <span>Stuck? You get a hint, not the answer.</span></li>
+      </ol>
+    </section>
+
     <section class="prompt">
       <p class="prompt-hi" lang="hi">आज क्या समझाओगे? Topic बोलो, और अपनी class बताओ।</p>
       <p class="prompt-en" lang="en">What will you explain today? Say the topic and your class.</p>
@@ -68,16 +79,8 @@
       </div>
     </section>
 
-    <section class="how">
-      <h2>How it works</h2>
-      <ol>
-        <li>Say any topic, in Hindi, English, Punjabi, Telugu or Kannada, or a mix.</li>
-        <li>Explain it aloud, as if to your younger brother or sister.</li>
-        <li>Samjhao asks one short question about the part you skipped. It does not give the answer.</li>
-        <li>See which points you explained on your own.</li>
-      </ol>
-      <p class="privacy">No login. Nothing is stored after a session.</p>
-    </section>
+    <p class="privacy">No login. Nothing is stored after a session.<br>
+      Hindi · English · ਪੰਜਾਬੀ · తెలుగు · ಕನ್ನಡ</p>
   </main>
 
   <!-- Screen 2 and 3: Explain, then the follow-up loop. -->
@@ -106,6 +109,9 @@
       <p class="mic-label" id="talk-mic-label"></p>
       <button type="button" class="link-button" id="talk-type-link" hidden>Type instead</button>
     </div>
+
+    <!-- Giving up is allowed, but Samjhao first asks for one more try. -->
+    <button type="button" class="give-up" id="give-up" hidden>मुझे नहीं पता</button>
 
     <form class="typed" id="talk-form" hidden>
       <label for="talk-input" id="talk-label">Type your answer</label>

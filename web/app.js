@@ -311,8 +311,28 @@ function showProblem(reply) {
   byId("tutor-text").textContent = text;
 }
 
+// The learner says "I don't know" with a tap. Samjhao nudges and gives the
+// next hint; only after both hints does it explain.
+async function giveUp() {
+  if (!state.sessionId || state.busy || Recorder.active) return;
+  Player.unlock();
+  Player.stop();
+  setBusy(true);
+  const reply = await Api.turn(state.sessionId, "", { silent: true });
+  setBusy(false);
+  if (!reply.ok) {
+    showProblem(reply);
+    return;
+  }
+  showReply(reply.data);
+}
+
 function showReply(data) {
   state.lang = data.lang || state.lang;
+  // The give-up button only makes sense while a question is open.
+  const asking = ["follow_up", "hint", "app_explains", "off_topic"].includes(data.action);
+  byId("give-up").hidden = !asking;
+  byId("give-up").textContent = phrase("give_up_button", "मुझे नहीं पता");
   if (data.action === "show_text_box") showTextBox(false);
   if (data.action === "done") {
     showSummary(data);
@@ -330,6 +350,7 @@ async function beginTopic(topicText, languageCode, spoken) {
   state.sessionId = null;
   state.lang = "hinglish";
   byId("tutor-text").textContent = "";
+  byId("give-up").hidden = true;
   showHeard(text, false);
   showProgress(null);
   show("talk");
@@ -414,6 +435,7 @@ byId("talk-form").addEventListener("submit", (event) => {
   sendAnswer(byId("talk-input").value, {}, false);
 });
 
+byId("give-up").addEventListener("click", giveUp);
 byId("home-type-link").addEventListener("click", () => showTextBox(false));
 byId("talk-type-link").addEventListener("click", () => showTextBox(false));
 byId("new-topic").addEventListener("click", backHome);

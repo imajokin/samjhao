@@ -16,15 +16,11 @@ class LLMJudge:
     def __init__(self, llm):
         self.llm = llm  # anything with ask_json(prompt, schema, name)
 
-    def make_key_points(
-        self, topic: str, level: str, language: str, confirmed: bool
-    ) -> TopicPlan:
+    def make_key_points(self, topic: str, level: str, confirmed: bool) -> TopicPlan:
         prompt = prompts.KEY_POINTS_PROMPT.format(
             topic=topic,
             level=level or "not given",
-            language=PROMPT_NAMES.get(language, "Hindi mixed with English"),
             confirmed="yes" if confirmed else "no",
-            language_rules=prompts.LANGUAGE_RULES,
         )
         answer = self.llm.ask_json(prompt, prompts.KEY_POINTS_SCHEMA, "key_points")
         points = []
@@ -36,9 +32,6 @@ class LLMJudge:
                     id=number,  # our own numbering, so ids are always 1, 2, 3...
                     statement=str(item["statement"]).strip(),
                     common_mistake=str(item.get("common_mistake", "")).strip(),
-                    question=str(item.get("question", "")).strip(),
-                    hint=str(item.get("hint", "")).strip(),
-                    explanation=str(item.get("explanation", "")).strip(),
                 )
             )
         return TopicPlan(
@@ -75,6 +68,9 @@ class LLMJudge:
                 if asked
                 else "none; this is the learner's first explanation"
             ),
+            hints_given=(
+                " | ".join(asked.hints) if asked and asked.hints else "none yet"
+            ),
             transcript=transcript,
             language_rules=prompts.LANGUAGE_RULES,
         )
@@ -100,3 +96,20 @@ class LLMJudge:
             hint=str(answer.get("hint") or "").strip(),
             explanation=str(answer.get("explanation") or "").strip(),
         )
+
+    def write_support(self, session: Session, point: KeyPoint) -> None:
+        learner_lines = [text for who, text in session.history if who == "learner"]
+        prompt = prompts.SUPPORT_PROMPT.format(
+            topic=session.topic,
+            level=session.level or "not given",
+            statement=point.statement,
+            common_mistake=point.common_mistake or "none listed",
+            conversation="\n".join(learner_lines[-4:]) or "(nothing yet)",
+            language=PROMPT_NAMES.get(session.lang, "Hindi mixed with English"),
+            language_rules=prompts.LANGUAGE_RULES,
+        )
+        answer = self.llm.ask_json(prompt, prompts.SUPPORT_SCHEMA, "support")
+        point.question = str(answer.get("question") or "").strip()
+        point.hint = str(answer.get("hint") or "").strip()
+        point.hint2 = str(answer.get("hint2") or "").strip()
+        point.explanation = str(answer.get("explanation") or "").strip() or point.explanation

@@ -13,9 +13,10 @@ from dataclasses import dataclass
 DEFAULT_LIVE_DEMO_URL = ""
 DEFAULT_VIDEO_URL = ""
 
-# The judging model Shubham picked on 27 Nov 2026, and OpenRouter's address.
+# The judging model and OpenRouter's address. Shubham switched to Claude
+# Sonnet 5.5 on 27 Nov 2026, after Haiku 5.5 credited a wrong explanation.
 # Both can be changed with one setting if a model gets costly or is withdrawn.
-DEFAULT_LLM_MODEL = "anthropic/claude-haiku-5.5"
+DEFAULT_LLM_MODEL = "anthropic/claude-sonnet-5.5"
 DEFAULT_LLM_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Sarvam speech. The regular speech-to-text model (not Dictate), and the two
@@ -84,7 +85,7 @@ class Settings:
         from app.tutor.strings import LANGUAGES, STRINGS
 
         # The few fixed phrases the page itself shows, in each language.
-        page_keys = ("thinking", "new_topic_button", "rerecord_button", "not_heard")
+        page_keys = ("thinking", "new_topic_button", "rerecord_button", "not_heard", "give_up_button")
         phrases = {
             lang: {key: STRINGS[key][lang] for key in page_keys} for lang in LANGUAGES
         }

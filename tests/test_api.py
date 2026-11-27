@@ -23,7 +23,7 @@ class FakeJudge:
     def __init__(self, fail=False):
         self.fail = fail
 
-    def make_key_points(self, topic, level, language, confirmed):
+    def make_key_points(self, topic, level, confirmed):
         if self.fail:
             raise ServiceDown("judging", "test")
         points = [
@@ -31,6 +31,9 @@ class FakeJudge:
             KeyPoint(2, "One spin takes a day.", question="Q2?", hint="H2.", explanation="E2."),
         ]
         return TopicPlan("ok", "Day and night", "Class 8", key_points=points)
+
+    def write_support(self, session, point):
+        self.support_calls = getattr(self, "support_calls", 0) + 1
 
     def judge_turn(self, session, transcript):
         if "everything" in transcript:

@@ -11,26 +11,24 @@ import urllib.request
 BASE = "http://localhost:8000"
 
 SCRIPTS = {
-    "Newton, Hinglish, wrong then fixed": [
+    "Newton: stuck twice, then gets it": [
         "Newton's third law, Class 11",
         "Har action ka equal aur opposite reaction hota hai, isliye dono cancel ho jaate hain aur cheez move nahi karti.",
         "pata nahi",
-        "Achha, dono forces alag alag bodies par lagte hain, isliye cancel nahi hote.",
-        "Dono forces ek hi time par lagte hain aur same type ke hote hain, aur hamesha pair mein aate hain.",
+        "Shayad dono forces usi cheez par lagte hain jisko dhakka diya?",
+        "Achha, ek force deewar par lagta hai aur doosra mere haath par, alag alag cheezon par.",
     ],
-    "Too broad": ["physics"],
-    "No class given": ["Compound interest", "Class 8"],
-    "Punjabi": [
-        "ਦਿਨ ਅਤੇ ਰਾਤ ਕਿਉਂ ਹੁੰਦੇ ਹਨ, Class 8",
-        "ਧਰਤੀ ਆਪਣੀ axis ਉੱਤੇ ਘੁੰਮਦੀ ਹੈ, ਇਸ ਲਈ ਦਿਨ ਅਤੇ ਰਾਤ ਹੁੰਦੇ ਹਨ।",
+    "Compound interest: gives up three times on one point": [
+        "Compound interest, Class 8",
+        "Compound interest mein har saal same interest milta hai principal par, bas rate zyada hota hai.",
+        "pata nahi",
+        "nahi pata yaar",
+        "mujhe nahi aata, bata do",
     ],
-    "Telugu": [
-        "మొక్కలు ఆహారం ఎలా తయారు చేసుకుంటాయి, Class 8",
-        "మొక్కలు sunlight తో ఆహారం తయారు చేసుకుంటాయి, అవి oxygen తీసుకుని carbon dioxide వదులుతాయి.",
-    ],
-    "Kannada": [
-        "ಚಂದ್ರನಿಗೆ phases ಏಕೆ ಇವೆ, Class 8",
-        "ಭೂಮಿಯ ನೆರಳು ಚಂದ್ರನ ಮೇಲೆ ಬೀಳುತ್ತದೆ, ಅದಕ್ಕೆ ಚಂದ್ರ ಕೆಲವೊಮ್ಮೆ ಅರ್ಧ ಕಾಣುತ್ತಾನೆ.",
+    "Moon phases in Hindi script, shadow idea": [
+        "चाँद के phases क्यों होते हैं, Class 8",
+        "चाँद के phases इसलिए होते हैं क्योंकि Earth की shadow चाँद पर पड़ती है, तो कभी आधा दिखता है कभी पूरा।",
+        "शायद बादल की वजह से?",
     ],
 }
 
@@ -49,7 +47,12 @@ def post(path: str, body: dict) -> tuple[dict, float]:
 
 
 def main() -> None:
+    import os
+
+    only = os.environ.get("ONLY", "")
     for name, turns in SCRIPTS.items():
+        if only and only.lower() not in name.lower():
+            continue
         print("\n" + "=" * 70 + "\n" + name)
         print("LEARNER:", turns[0])
         reply, seconds = post("/api/session/start", {"topic_text": turns[0]})
@@ -67,6 +70,18 @@ def main() -> None:
                 for point in reply["summary"]["points"]:
                     print(f"   [{point['result']}] {point['statement']}")
                 break
+        else:
+            # Finish with the give-up button, to see the hints and the explanation.
+            for _ in range(12):
+                if reply.get("action") == "done" or not session:
+                    break
+                time.sleep(2.5)  # a person does not tap faster than this
+                print("LEARNER: [taps: I don't know]")
+                reply, seconds = post(f"/api/session/{session}/turn", {"transcript": "", "silent": True})
+                progress = reply.get("progress") or {}
+                print(f"TUTOR ({reply.get('action')}, {seconds:.1f}s, {progress.get('done')}/{progress.get('total')}): {reply.get('text')}")
+            for point in (reply.get("summary") or {}).get("points", []):
+                print(f"   [{point['result']}] {point['statement']}")
 
 
 if __name__ == "__main__":

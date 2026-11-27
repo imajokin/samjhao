@@ -13,7 +13,6 @@ LANGUAGE_RULES = """Samjhao works in Hindi, English, Punjabi, Telugu and Kannada
 KEY_POINTS_PROMPT = """You are preparing a hidden checklist for a tutor that listens to a learner explain a concept aloud.
 What the learner said they will explain (from speech, so spelling may be rough): {topic}
 Level they gave separately: {level}
-Learner's language: {language}
 Topic already confirmed by the learner: {confirmed}
 
 Decide the status first, in this order:
@@ -37,12 +36,6 @@ If "ok", write 3 to 5 key points that a correct explanation at this level must i
 For each key point give:
 - statement: one sentence, in English.
 - common_mistake: the usual wrong idea, or an empty string.
-- question: one short question (under 20 words) in the learner's language that leads toward this idea. It must not state the idea, and must not offer the answer as one of two options ("X या Y?").
-- hint: one short sentence in the learner's language that points the learner where to look. It must not state the idea or the answer.
-- explanation: two short sentences in the learner's language that state the idea plainly.
-
-Language rules for question, hint and explanation:
-{language_rules}
 If the status is not "ok", return an empty key_points list.
 Return JSON only."""
 
@@ -65,18 +58,8 @@ KEY_POINTS_SCHEMA = {
                     "id": {"type": "integer"},
                     "statement": {"type": "string"},
                     "common_mistake": {"type": "string"},
-                    "question": {"type": "string"},
-                    "hint": {"type": "string"},
-                    "explanation": {"type": "string"},
                 },
-                "required": [
-                    "id",
-                    "statement",
-                    "common_mistake",
-                    "question",
-                    "hint",
-                    "explanation",
-                ],
+                "required": ["id", "statement", "common_mistake"],
                 "additionalProperties": False,
             },
         },
@@ -103,6 +86,7 @@ The conversation so far:
 {conversation}
 
 The key point the tutor just asked about: {asked_about}
+Hints the tutor has already given for that point: {hints_given}
 
 The learner's latest words (a speech transcript, so spelling may be rough):
 \"\"\"{transcript}\"\"\"
@@ -146,8 +130,10 @@ Examples for the point "Action and reaction act on two different bodies" when th
 - Warm tone. Never use the words "wrong" or "galat" or "गलत", or their equivalents in any language.
 
 For the same chosen point, also write, in the same language as the question:
-- hint: one short sentence that points the learner where to look. It must not state the idea or the answer.
-- explanation: two short sentences that state the idea plainly.
+- hint: the next hint for this learner. A good hint starts from what this learner actually said or seems to believe, and gives them one new thing to think with. It never states the idea or the answer, and never repeats a hint already given.
+  - If no hint has been given for this point yet: a gentle hint. Tell them where to look or which part of their own explanation to think about again.
+  - If one hint has already been given: a stronger hint. Use an everyday example or situation the learner has seen, in which the idea becomes visible, and stop just short of the answer. One or two short sentences.
+- explanation: two short sentences that state the idea plainly, and say why the learner's own idea does not work if they had one.
 If every point is covered or closed, both are empty strings.
 
 Also report:
@@ -213,6 +199,39 @@ JUDGE_SCHEMA = {
         "hint",
         "explanation",
     ],
+    "additionalProperties": False,
+}
+
+
+# Written only when needed, once the learner's language is known: for a
+# point the judge did not just write a question or hint for.
+SUPPORT_PROMPT = """A learner is explaining a concept aloud to a tutor that listens. The tutor needs help text for one key point the learner has not explained yet.
+Topic: {topic}
+Level: {level}
+The key point: {statement}
+The usual wrong idea about it: {common_mistake}
+What the learner has said so far:
+{conversation}
+
+Write, in {language}:
+- question: one short question (under 20 words) that leads toward this idea. It must not state the idea, and must not offer the answer as one of two options.
+- hint: a first, gentle hint: one short sentence that tells the learner where to look or what to think about. It must not state the idea or the answer.
+- hint2: a second, stronger hint: one or two short sentences with an everyday example or situation the learner has seen, in which the idea becomes visible. Stop just short of saying the answer.
+- explanation: two short sentences that state the idea plainly.
+
+Language rules:
+{language_rules}
+Return JSON only."""
+
+SUPPORT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "question": {"type": "string"},
+        "hint": {"type": "string"},
+        "hint2": {"type": "string"},
+        "explanation": {"type": "string"},
+    },
+    "required": ["question", "hint", "hint2", "explanation"],
     "additionalProperties": False,
 }
 

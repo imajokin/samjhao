@@ -61,6 +61,7 @@ class Settings:
     rate_limit_per_minute: int
     daily_request_cap: int
     daily_model_call_cap: int
+    speak_max_chars: int
     dev_viewer: bool
 
     @property
@@ -124,6 +125,8 @@ def load_settings() -> Settings:
         daily_request_cap=_number("DAILY_REQUEST_CAP", 2000),
         # Paid model calls per day. One learner turn is usually one call.
         daily_model_call_cap=_number("DAILY_MODEL_CALL_CAP", 400),
+        # Longest text turned into speech in one request.
+        speak_max_chars=min(_number("SPEAK_MAX_CHARS", 600), 2500),
         # A page that shows the current conversations, for the developer only.
         # Off unless switched on. Never switch it on for the public link.
         dev_viewer=_text("DEV_VIEWER").lower() == "on",

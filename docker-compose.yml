@@ -30,6 +30,7 @@ services:
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-30}
       DAILY_REQUEST_CAP: ${DAILY_REQUEST_CAP:-2000}
       DAILY_MODEL_CALL_CAP: ${DAILY_MODEL_CALL_CAP:-400}
+      SPEAK_MAX_CHARS: ${SPEAK_MAX_CHARS:-600}
       DEV_VIEWER: ${DEV_VIEWER:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]

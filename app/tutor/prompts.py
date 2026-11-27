@@ -297,7 +297,7 @@ The key points of a correct explanation, and how the learner did on each:
 {key_points}
 
 Write, in {language}:
-- explanation: the full explanation at this level, in 4 to 6 short, plain sentences, in the order a good teacher would say it. Cover every key point. Spend a little more on the points the learner needed help with or did not reach. Do not praise or address the learner; just explain.
+- explanation: the full explanation at this level, in 4 to 6 short, plain sentences and under 550 characters in total, in the order a good teacher would say it. Cover every key point. Spend a little more on the points the learner needed help with or did not reach. Do not praise or address the learner; just explain.
 - diagram_caption: one short sentence that says what the diagram shows.
 
 Then draw the diagram as SVG, in the field svg:

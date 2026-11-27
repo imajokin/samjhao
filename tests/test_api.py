@@ -233,6 +233,21 @@ class FullExplanation(unittest.TestCase):
             self.assertEqual(safe_svg(bad), "", bad)
 
 
+class SpeechLimit(unittest.TestCase):
+    def test_spoken_text_is_cut_at_a_whole_sentence(self):
+        from app.providers.tts_sarvam import trim_to_sentences
+
+        short = "यह छोटा है।"
+        self.assertEqual(trim_to_sentences(short, 600), short)
+        long_text = "पहला वाक्य यहाँ है। " * 60
+        cut = trim_to_sentences(long_text, 600)
+        self.assertLessEqual(len(cut), 600)
+        self.assertTrue(cut.endswith("।"))
+
+    def test_default_limit_is_600_characters(self):
+        self.assertEqual(load_settings().speak_max_chars, 600)
+
+
 class DeveloperViewer(unittest.TestCase):
     def test_viewer_is_off_unless_switched_on(self):
         self.assertEqual(client().get("/dev/sessions").status_code, 404)

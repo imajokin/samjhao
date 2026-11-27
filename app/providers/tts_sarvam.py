@@ -14,7 +14,19 @@ from app.tutor.language import SPEECH_CODES
 
 TTS_URL = "https://api.sarvam.ai/text-to-speech"
 TIMEOUT_SECONDS = 45
-MAX_CHARACTERS = 2500  # Sarvam's limit per request
+
+
+def trim_to_sentences(text: str, limit: int) -> str:
+    """The text cut to at most `limit` characters, ending on a whole sentence
+    where possible, so the voice never stops in the middle of a word."""
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    last_stop = max(cut.rfind(mark) for mark in ("।", ".", "?", "!", "…"))
+    if last_stop >= limit // 2:
+        return cut[: last_stop + 1]
+    return cut.rsplit(" ", 1)[0]
 
 
 def speak(settings: Settings, text: str, lang: str, voice: str) -> bytes:
@@ -23,7 +35,9 @@ def speak(settings: Settings, text: str, lang: str, voice: str) -> bytes:
         settings.sarvam_tts_voice_female if voice == "female" else settings.sarvam_tts_voice_male
     )
     body = {
-        "text": text[:MAX_CHARACTERS],
+        # Our own ceiling, well under Sarvam's 2,500, to keep the cost of
+        # each spoken reply small on a public link.
+        "text": trim_to_sentences(text, settings.speak_max_chars),
         "language_code": SPEECH_CODES.get(lang, "hi-IN"),
         "model": settings.sarvam_tts_model,
         "speaker": speaker,

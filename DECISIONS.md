@@ -54,13 +54,12 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Home screen: the voice choice sits above the class choice, there are ten example topics across subjects, and the headline says "Explain it to Samjhao". | Shubham's requests. |
 | 27 Nov 2026 | The live link was opened by Shubham in Chrome on an iPhone and worked; the reply speed is acceptable to him. | His test on 27 Nov. |
 | 27 Nov 2026 | A "Language" switch on the first screen changes the app's words between Hindi, English, Punjabi, Telugu and Kannada. English stays as a smaller second line next to the other four. If the learner picks a language, Samjhao replies in it; if they never touch the switch, it follows the language they speak, as before. The choice is remembered on that device only. | Shubham asked for a "change language" option on 27 Nov. He named Punjabi, Telugu and Hindi; all five supported languages are included. The Punjabi, Telugu and Kannada screen text is AI-written and awaits a native check. |
+| 27 Nov 2026 | Speech cost limits: the live link allows 600 requests a day (was 1,500), and no more than 600 characters are spoken per request, cut at a whole sentence. The full explanation is kept under about 550 characters so it is never cut. | Shubham agreed on 27 Nov. Sarvam has no spending limit of its own except the account balance. |
 
 ## Open (waiting for Shubham)
 
 - Video link: to go into app/config.py and README.md once the video exists.
 - A test of the live link on a real Android phone (it worked on an iPhone).
-- Sarvam has no spending limit except its balance (about 3,455 credits on 27 Nov). Proposed: lower the live daily request cap to 600 and limit spoken replies to 600 characters.
-- Changes since commit 9668a79 are on the laptop only, by Shubham's instruction. Push to GitHub and update the live copy when he says.
 - Three learners finishing a session unaided before the demo is recorded (reviewer's item 6).
 - Sarvam: what balance or limit protects that key. The OpenRouter key has a $10 limit (checked 27 Nov: $2.56 used).
 - Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).

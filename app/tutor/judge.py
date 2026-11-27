@@ -77,11 +77,12 @@ class LLMJudge:
         )
         answer = self.llm.ask_json(prompt, prompts.JUDGE_SCHEMA, "judgement")
 
-        statuses = {}
+        statuses, evidence = {}, {}
         for item in answer.get("points") or []:
             if isinstance(item, dict) and item.get("status") in STATUSES:
                 try:
                     statuses[int(item["id"])] = item["status"]
+                    evidence[int(item["id"])] = str(item.get("evidence") or "").strip()
                 except (KeyError, TypeError, ValueError):
                     continue
         about = answer.get("about_point_id")
@@ -100,6 +101,7 @@ class LLMJudge:
             hint=str(answer.get("hint") or "").strip(),
             explanation=str(answer.get("explanation") or "").strip(),
             meaning=str(answer.get("learner_meaning") or "").strip(),
+            evidence=evidence,
         )
 
     def write_support(self, session: Session, point: KeyPoint) -> None:

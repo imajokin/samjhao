@@ -119,3 +119,19 @@ def is_yes(text: str) -> bool:
 
 def is_no(text: str) -> bool:
     return any(word in _NO for word in _words(text))
+
+
+def quote_is_from(quote: str, spoken: list[str]) -> bool:
+    """True if most of the quoted words really appear in what the learner said.
+
+    This does not judge meaning; the language model does that. It only checks
+    that a point marked "covered" can be traced to the learner's own words.
+    """
+    quoted = [word for word in _words(quote) if len(word) > 1]
+    if not quoted:
+        return False
+    said = set()
+    for line in spoken:
+        said.update(_words(line))
+    found = sum(1 for word in quoted if word in said)
+    return found / len(quoted) >= 0.6

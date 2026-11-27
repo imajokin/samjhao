@@ -20,6 +20,38 @@ class SessionStore:
         self._sessions: dict[str, tuple[float, Session]] = {}
         self._before: dict[str, Session] = {}  # each session as it was one turn ago
         self._lock = threading.Lock()
+        self._in_turn: set[str] = set()  # sessions with a turn being judged now
+        # Forget idle sessions on a timer, not only when someone else arrives.
+        sweeper = threading.Thread(target=self._sweep_forever, daemon=True)
+        sweeper.start()
+
+    def _sweep_forever(self) -> None:
+        while True:
+            time.sleep(60)
+            with self._lock:
+                self._forget_old()
+
+    def begin_turn(self, session_id: str) -> bool:
+        """False if this session already has a turn in progress."""
+        with self._lock:
+            if session_id in self._in_turn:
+                return False
+            self._in_turn.add(session_id)
+            return True
+
+    def end_turn(self, session_id: str) -> None:
+        with self._lock:
+            self._in_turn.discard(session_id)
+
+    def forget_words(self, session: Session) -> None:
+        """Once the summary is shown, drop everything the learner said and
+        the copy kept for undo. Only the summary itself remains."""
+        with self._lock:
+            session.history.clear()
+            session.notes.clear()
+            session.first_words = ""
+            session.topic_text = ""
+            self._before.pop(session.id, None)
 
     def create(self, voice: str = "male") -> Session:
         session = new_session(voice)
@@ -63,6 +95,7 @@ class SessionStore:
     def recent(self, limit: int = 10) -> list[Session]:
         """The most recently used sessions, newest first. For the developer's viewer."""
         with self._lock:
+            self._forget_old()
             ordered = sorted(self._sessions.values(), key=lambda entry: entry[0], reverse=True)
             return [session for _, session in ordered[:limit]]
 

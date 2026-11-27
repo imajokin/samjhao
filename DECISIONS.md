@@ -39,11 +39,15 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | A learner who asks Samjhao something instead of answering gets an answer, and no hint is used up (twice per point at most). | Part of making it feel like a normal conversation with a teacher. |
 | 27 Nov 2026 | Key points are limited to three or four essentials per topic. | Less strict: fewer things to be questioned on. |
 | 27 Nov 2026 | A developer's viewer at /dev/sessions shows the conversations currently in memory. It exists only when DEV_VIEWER=on, which is set on Shubham's laptop and must never be set on the public link. Nothing is written to disk. | Shubham asked for it so Claude can see what went wrong in a session he tried. |
+| 27 Nov 2026 | Changes made after an independent review of commit a6456d5: (1) the developer viewer refuses any request that arrives through a tunnel or proxy; (2) a recording that was only partly transcribed is never judged: the learner sees what was heard and can fix it or say it again, with no hint used; (3) a point is credited only if the words quoted for it are found in what the learner said, and a doubtful word is checked with "did you say X or Y?" before judging; (4) a daily cap on paid model calls, and each visitor behind a tunnel gets their own limit; (5) a failed turn puts the session back exactly as it was, and only one turn at a time is judged per session; (6) the learner's words are dropped once the summary is shown and idle sessions are forgotten on a timer; (7) the second nudge no longer says "you are getting close"; (8) with no keys, the home screen hides the controls that cannot be used. | The reviewer's ranked list. Items that need Shubham (final links, three observed learners, provider spending limits) stay open below. |
 
 ## Open (waiting for Shubham)
 
-- Thinking level for the judge: full thinking now takes 10 to 17 s per turn with the longer replies; the lightest level takes 4 to 5 s and followed the rules in 10 of 10 turns. Shubham chose full thinking earlier; ask again with these numbers.
-- How the live link is set up on 14061406.xyz (which machine runs the container).
+- Thinking level for the judge: full thinking takes 10 to 17 s per turn; the lightest level takes 4 to 5 s and followed the rules in 10 of 10 turns.
+- Live demo and video links: to go into app/config.py and README.md once they exist. Until then the no-keys screen points to a README section that says "to be added".
+- How the live link is set up on 14061406.xyz. It must be a separate instance with DEV_VIEWER unset.
+- Three learners finishing a session unaided before the demo is recorded (reviewer's item 6).
+- Sarvam: what balance or limit protects that key. The OpenRouter key has a $10 limit (checked 27 Nov: $2.56 used).
 - Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).
 
 ## Checked against live documentation (27 Nov 2026)

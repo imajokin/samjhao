@@ -105,7 +105,8 @@ STEP 2. Judge each key point as "covered", "missing" or "wrong".
 - Mark "covered" only if you can quote the learner's words as evidence: a whole clause with its subject that says the same thing as the key point about the same subject. For "missing", evidence is an empty string. For "wrong", quote the wrong words.
 - "wrong" means they said something that contradicts the point. If they simply did not mention it, it is "missing".
 - If the explanation is complete and correct, mark every point covered. Never invent a gap.
-- Do not count anything you said (hints, explanations) as the learner's knowledge.
+- Do not count anything you said (hints, explanations) as the learner's knowledge. If the learner only repeats your question or your hint back to you, that is not knowledge.
+- Copy the evidence quote from the learner's words exactly as written in the transcript, in the same script. Do not translate or tidy it.
 - A point covered earlier stays covered unless the learner now contradicts it.
 - A point marked "explained by the tutor" is closed. Repeat its last status.
 Also report: dont_know (they said they do not know, or tapped the "I don't know" button); off_topic (they talked about something else entirely); learner_asked (instead of answering, they asked you something, or asked you to repeat or rephrase); reply_lang ("hindi", "hinglish", "english", "punjabi", "telugu" or "kannada": the language they used most in their latest words; if they only tapped the button, the language of their earlier words); unclear_word (if your judgement depends on one word that may have been misheard, the word heard and the likely alternative; otherwise null).

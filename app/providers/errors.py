@@ -8,3 +8,10 @@ class ServiceDown(Exception):
     def __init__(self, service: str, detail: str = ""):
         super().__init__(f"{service}: {detail}")
         self.service = service
+
+
+class DailyCap(ServiceDown):
+    """Today's limit on paid model calls is used up."""
+
+    def __init__(self):
+        super().__init__("judging", "daily model-call cap reached")

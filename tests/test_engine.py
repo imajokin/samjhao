@@ -250,6 +250,54 @@ class GivingUp(unittest.TestCase):
         self.assertEqual(third["action"], "hint")  # after two free questions, hints start
 
 
+class Evidence(unittest.TestCase):
+    """A green mark must trace back to something the learner said."""
+
+    def test_point_is_not_credited_when_the_quote_is_not_the_learners_words(self):
+        claim = verdict(covered=(1, 2, 3), move="done", reply="All clear!")
+        claim.evidence = {1: "the moon reflects sunlight", 2: LONG, 3: LONG}
+        tutor, session = started([claim])
+        reply = tutor.turn(session, LONG)  # the learner never mentioned reflecting
+        self.assertIsNone(session.point(1).result)
+        self.assertEqual(results(session)[1:], [GREEN, GREEN])
+        self.assertEqual(reply["action"], "follow_up")  # not "done"
+        self.assertEqual(session.current_id, 1)
+
+    def test_point_with_no_quote_is_not_credited(self):
+        claim = verdict(covered=(1, 2, 3), move="done", reply="All clear!")
+        claim.evidence = {1: "", 2: LONG, 3: LONG}
+        tutor, session = started([claim])
+        tutor.turn(session, LONG)
+        self.assertIsNone(session.point(1).result)
+
+    def test_point_is_credited_when_the_quote_matches(self):
+        claim = verdict(covered=(1, 2, 3), move="done", reply="All clear!")
+        claim.evidence = {1: "we see its lit half", 2: "moon goes around the earth", 3: LONG}
+        tutor, session = started([claim])
+        reply = tutor.turn(session, LONG)
+        self.assertEqual(reply["action"], "done")
+        self.assertEqual(results(session), [GREEN, GREEN, GREEN])
+
+    def test_a_doubtful_word_is_checked_before_anything_is_judged(self):
+        doubtful = verdict(covered=(1, 2, 3), move="done", reply="All clear!",
+                           unclear_word={"heard": "son", "likely": "sun"})
+        tutor, session = started([doubtful, verdict(covered=(1, 2, 3), move="done", reply="Great.")])
+        reply = tutor.turn(session, LONG)
+        self.assertEqual(reply["action"], "confirm_word")
+        self.assertIn("son", reply["text"])
+        self.assertIn("sun", reply["text"])
+        self.assertEqual(results(session), [None, None, None])  # nothing judged yet
+        self.assertEqual(tutor.turn(session, "sun")["action"], "done")
+
+    def test_word_checks_cannot_loop(self):
+        doubtful = verdict(covered=(1, 2), move="ask", about=3, reply="Q?",
+                           unclear_word={"heard": "son", "likely": "sun"})
+        tutor, session = started([doubtful, doubtful, doubtful])
+        tutor.turn(session, LONG)
+        tutor.turn(session, "son")
+        self.assertEqual(tutor.turn(session, "son")["action"], "follow_up")
+
+
 class GapOrder(unittest.TestCase):
     def test_a_wrong_point_is_asked_before_a_skipped_one(self):
         tutor, session = started([

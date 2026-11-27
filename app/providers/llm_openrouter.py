@@ -6,11 +6,13 @@ ServiceDown. The key is sent only to OpenRouter and is never logged.
 """
 
 import json
+import threading
+import time
 
 import httpx
 
 from app.config import Settings
-from app.providers.errors import ServiceDown
+from app.providers.errors import DailyCap, ServiceDown
 
 TIMEOUT_SECONDS = 60
 
@@ -19,6 +21,20 @@ class OpenRouter:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.url = settings.llm_base_url.rstrip("/") + "/chat/completions"
+        self._day = ""
+        self._calls_today = 0
+        self._lock = threading.Lock()
+
+    def _count_call(self) -> None:
+        """Counts every paid model call, including retries. This is the app's
+        own ceiling; the spending limit set on the key is the real guard."""
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        with self._lock:
+            if today != self._day:
+                self._day, self._calls_today = today, 0
+            if self._calls_today >= self.settings.daily_model_call_cap:
+                raise DailyCap()
+            self._calls_today += 1
 
     def ask_json(self, prompt: str, schema: dict, name: str) -> dict:
         """The model's answer as a dictionary that matches `schema`."""
@@ -42,6 +58,7 @@ class OpenRouter:
 
         detail = ""
         for _attempt in (1, 2):
+            self._count_call()
             try:
                 reply = httpx.post(self.url, json=body, headers=headers, timeout=TIMEOUT_SECONDS)
                 if reply.status_code != 200:

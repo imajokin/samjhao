@@ -39,6 +39,7 @@ const TEXT = {
   slowDown: "थोड़ा रुको, फिर कोशिश करो। / Please wait a moment and try again.",
   tapToSpeak: "Mic दबाओ और बोलो · Tap the mic and speak",
   listening: "सुन रहा हूँ… रुकने के लिए फिर दबाओ · Listening… tap again to stop",
+  partHeard: "तुम्हारी बात का कुछ हिस्सा सुनाई नहीं दिया। जो सुना वह नीचे लिखा है: उसे ठीक करके भेजो, या mic दबाकर फिर से बोलो। / Part of what you said was not heard. What was heard is in the box below: correct it and send, or tap the mic and say it again.",
   speechFailed: "आवाज़ अभी काम नहीं कर रही। Type करके बताओ। / Speech is not working right now. Please type instead.",
   pickClass: "पहले अपनी class चुनो · Choose your class first",
   micBlocked: "Mic की अनुमति नहीं मिली। Address bar के ताले (lock) पर tap करके Microphone को Allow करो, या नीचे type करो। / The mic is blocked. Tap the lock icon in the address bar and allow the microphone, or type below.",
@@ -147,7 +148,12 @@ async function startHome() {
   } else {
     byId("notice").hidden = true;
   }
-  if (!config.judging) return; // nothing can be judged, so nothing to start
+  if (!config.judging) {
+    // Nothing can be judged, so hide the controls that cannot be used. The
+    // message, the links and the switched-off mic stay near the top.
+    for (const id of ["class-picker", "home-prompt", "examples"]) byId(id).hidden = true;
+    return;
+  }
 
   byId("voice-picker").hidden = false;
   for (const chip of document.querySelectorAll(".chip")) {
@@ -211,7 +217,9 @@ function listen() {
         const failed = replies.some((reply) => !reply.ok);
         const texts = replies.map((reply) => (reply.ok && reply.data.transcript) || "");
         const code = replies.map((reply) => reply.ok && reply.data.language_code).find(Boolean);
-        const text = heardVoice ? texts.join(" ").replace(/\s+/g, " ").trim() : "";
+        // Use the words that came back whenever there are any, even if the
+        // sound meter thought the room was silent.
+        const text = texts.join(" ").replace(/\s+/g, " ").trim();
         resolve({ text, languageCode: code || "", failed });
       },
     })
@@ -245,10 +253,17 @@ async function micTapped(where, redo) {
   }
   setMic("idle");
 
-  if (heard.failed && !heard.text) {
-    // The speech service failed: offer the text box.
+  if (heard.failed) {
+    // Part or all of the recording could not be turned into text. Never judge
+    // half an explanation: show what was heard and let the learner fix it or
+    // say it again. Nothing is sent, so no hint is used up.
     showTextBox(false);
-    sayLocally(TEXT.speechFailed, where);
+    if (heard.text) {
+      byId(where === "home" ? "home-input" : "talk-input").value = heard.text;
+      sayLocally(TEXT.partHeard, where);
+    } else {
+      sayLocally(TEXT.speechFailed, where);
+    }
     return;
   }
   if (where === "home") {
@@ -344,7 +359,7 @@ function showProblem(reply) {
   let text = TEXT.serviceDown;
   if (data.error === "service_down" && data.text) text = data.text;
   if (data.error === "daily_cap") text = (data.text_hi || "") + " / " + (data.text || "");
-  if (data.error === "rate_limited") text = TEXT.slowDown;
+  if (data.error === "rate_limited" || data.error === "busy") text = TEXT.slowDown;
   if (data.error === "session_not_found") text = TEXT.sessionGone;
   if (data.error === "keys_not_set") text = NOTICES.none.hi + " / " + NOTICES.none.en;
   byId("tutor-text").textContent = text;

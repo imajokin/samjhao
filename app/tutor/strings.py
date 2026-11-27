@@ -92,13 +92,14 @@ STRINGS = {
         "telugu": "పర్వాలేదు, ఇది ఆలోచించాల్సిన విషయం. ఒకసారి ప్రయత్నించి చూడు.",
         "kannada": "ಪರವಾಗಿಲ್ಲ, ಇದು ಯೋಚಿಸಬೇಕಾದ ವಿಷಯ. ಒಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ ನೋಡು.",
     },
-    # Said before the second hint: do not give up yet.
+    # Said before the second hint. Encouraging, never a telling-off, and it
+    # makes no claim that the learner is close.
     "nudge_again": {
-        "hindi": "इतनी जल्दी हार मत मानो, तुम पास पहुँच रहे हो। बस एक बार और कोशिश करो।",
-        "english": "Do not give up yet, you are getting close. Try just once more.",
-        "punjabi": "ਇੰਨੀ ਛੇਤੀ ਹਾਰ ਨਾ ਮੰਨੋ, ਤੁਸੀਂ ਨੇੜੇ ਪਹੁੰਚ ਰਹੇ ਹੋ। ਬੱਸ ਇੱਕ ਵਾਰ ਹੋਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
-        "telugu": "ఇంత త్వరగా వదిలేయకు, నువ్వు దగ్గరికి వస్తున్నావు. ఇంకొక్కసారి ప్రయత్నించు.",
-        "kannada": "ಇಷ್ಟು ಬೇಗ ಬಿಟ್ಟುಕೊಡಬೇಡ, ನೀನು ಹತ್ತಿರ ಬರುತ್ತಿದ್ದೀಯ. ಇನ್ನೊಮ್ಮೆ ಮಾತ್ರ ಪ್ರಯತ್ನಿಸು.",
+        "hindi": "हार मत मानो, इसे और छोटा करके देखते हैं। बस एक बार और कोशिश करो।",
+        "english": "Do not give up, let us make this smaller. Try just once more.",
+        "punjabi": "ਹਾਰ ਨਾ ਮੰਨੋ, ਇਸਨੂੰ ਹੋਰ ਸੌਖਾ ਕਰਕੇ ਵੇਖਦੇ ਹਾਂ। ਬੱਸ ਇੱਕ ਵਾਰ ਹੋਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+        "telugu": "వదిలేయకు, దీన్ని ఇంకా సులభంగా చూద్దాం. ఇంకొక్కసారి ప్రయత్నించు.",
+        "kannada": "ಬಿಟ್ಟುಕೊಡಬೇಡ, ಇದನ್ನು ಇನ್ನೂ ಸುಲಭವಾಗಿ ನೋಡೋಣ. ಇನ್ನೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸು.",
     },
     # Said when both hints are used and the app explains the point itself.
     "explain_lead": {

@@ -130,6 +130,74 @@ class SessionRoutes(unittest.TestCase):
         self.assertEqual(reply.json()["error"], "daily_cap")
 
 
+class FailsOnce(FakeJudge):
+    """Judges fine, except that the first follow-up answer fails once."""
+
+    def __init__(self):
+        super().__init__()
+        self.failed = False
+
+    def judge_turn(self, session, transcript):
+        if session.current_id == 2 and not self.failed:
+            self.failed = True
+            # Simulate a failure after the session was already changed.
+            session.point(2).hints.append("half-applied")
+            raise ServiceDown("judging", "test")
+        return super().judge_turn(session, transcript)
+
+
+class Safeguards(unittest.TestCase):
+    def test_a_failed_turn_leaves_the_session_exactly_as_it_was(self):
+        api = client(FailsOnce())
+        sid = api.post("/api/session/start", json={"topic_text": "Day and night, Class 8"}).json()["session_id"]
+        api.post(f"/api/session/{sid}/turn", json={"transcript": LONG})
+        failed = api.post(f"/api/session/{sid}/turn", json={"transcript": "everything"})
+        self.assertEqual(failed.json()["error"], "service_down")
+        # The same answer again: judged as if the failure never happened.
+        done = api.post(f"/api/session/{sid}/turn", json={"transcript": "everything"}).json()
+        self.assertEqual(done["action"], "done")
+        self.assertEqual([p["result"] for p in done["summary"]["points"]], ["green", "green"])
+
+    def test_each_visitor_behind_a_tunnel_gets_their_own_limit(self):
+        api = client(RATE_LIMIT_PER_MINUTE="1")
+        body = {"topic_text": "Day and night, Class 8"}
+        first = api.post("/api/session/start", json=body, headers={"CF-Connecting-IP": "1.1.1.1"})
+        other = api.post("/api/session/start", json=body, headers={"CF-Connecting-IP": "2.2.2.2"})
+        again = api.post("/api/session/start", json=body, headers={"CF-Connecting-IP": "1.1.1.1"})
+        self.assertEqual((first.status_code, other.status_code, again.status_code), (200, 200, 429))
+
+    def test_model_call_cap(self):
+        from app.providers.errors import DailyCap
+        from app.providers.llm_openrouter import OpenRouter
+
+        with mock.patch.dict(os.environ, {"DAILY_MODEL_CALL_CAP": "2"}):
+            llm = OpenRouter(load_settings())
+        llm._count_call()
+        llm._count_call()
+        with self.assertRaises(DailyCap):
+            llm._count_call()
+
+    def test_one_turn_at_a_time(self):
+        store = SessionStore()
+        session = store.create()
+        self.assertTrue(store.begin_turn(session.id))
+        self.assertFalse(store.begin_turn(session.id))
+        store.end_turn(session.id)
+        self.assertTrue(store.begin_turn(session.id))
+
+    def test_words_are_forgotten_once_the_summary_is_shown(self):
+        store = SessionStore()
+        session = store.create()
+        session.history.append(("learner", "my words"))
+        session.topic_text = session.first_words = "my topic"
+        store.remember(session)
+        store.forget_words(session)
+        self.assertEqual((session.history, session.topic_text, session.first_words), ([], "", ""))
+        session.history.append(("learner", "later"))
+        store.rewind(session)  # nothing kept to go back to
+        self.assertEqual(session.history, [("learner", "later")])
+
+
 class DeveloperViewer(unittest.TestCase):
     def test_viewer_is_off_unless_switched_on(self):
         self.assertEqual(client().get("/dev/sessions").status_code, 404)
@@ -144,6 +212,12 @@ class DeveloperViewer(unittest.TestCase):
         self.assertIn("How long?", page.text)
         data = api.get("/dev/sessions.json").json()
         self.assertEqual(data[0]["history"][-1], ["tutor", "How long?"])
+
+    def test_viewer_never_answers_through_a_tunnel_or_proxy(self):
+        api = client(DEV_VIEWER="on")
+        for header in ({"CF-Connecting-IP": "1.2.3.4"}, {"X-Forwarded-For": "1.2.3.4"}, {"CF-Ray": "abc"}):
+            self.assertEqual(api.get("/dev/sessions", headers=header).status_code, 404, header)
+            self.assertEqual(api.get("/dev/sessions.json", headers=header).status_code, 404, header)
 
 
 class StoreAndLimiter(unittest.TestCase):

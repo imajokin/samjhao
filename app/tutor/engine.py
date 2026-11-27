@@ -17,12 +17,20 @@ honest and makes loops impossible:
 
 import uuid
 
-from app.tutor.language import guess_language, is_no, is_yes, language_from_code, word_count
+from app.tutor.language import (
+    guess_language,
+    is_no,
+    is_yes,
+    language_from_code,
+    quote_is_from,
+    word_count,
+)
 from app.tutor.models import AMBER, GREEN, Judge, Judgement, KeyPoint, Session
 from app.tutor.strings import say
 
 MIN_FIRST_EXPLANATION_WORDS = 5
 MAX_HINTS = 2  # hints per key point before the app explains it
+MAX_WORD_CHECKS = 2  # times per session we may ask "did you say X or Y?"
 MAX_CLARIFIES = 2  # times per point the learner may ask us something for free
 GAVE_UP = "(the learner tapped the button: I don't know)"
 NOT_HEARD_BEFORE_TEXT_BOX = 2
@@ -121,6 +129,11 @@ class Tutor:
             return self._setup_turn(session, transcript)
 
         gave_up = silent and session.phase == "follow_up"
+        if transcript and session.held_words and not gave_up:
+            # They have just told us which word they meant. Judge the answer
+            # that was waiting, together with that.
+            transcript = f"{session.held_words}\n(Asked which word they meant, the learner said: {transcript})"
+            session.held_words = ""
         if gave_up:
             transcript = GAVE_UP
         else:
@@ -141,6 +154,16 @@ class Tutor:
             written = judgement.reply if judgement.move == "off_topic" else ""
             text = written or _join(_say(session, "off_topic"), session.last_question)
             return self._reply(session, "off_topic", text, judgement)
+
+        # The verdict hangs on one word that may have been misheard. Ask about
+        # that word first, judge nothing yet, and use up no hint.
+        unclear = judgement.unclear_word or {}
+        heard, likely = str(unclear.get("heard", "")).strip(), str(unclear.get("likely", "")).strip()
+        if heard and likely and heard != likely and not gave_up and session.word_checks < MAX_WORD_CHECKS:
+            session.word_checks += 1
+            session.held_words = session.history.pop()[1]  # judged on the next turn
+            text = _say(session, "confirm_word", a=heard, b=likely)
+            return self._reply(session, "confirm_word", text, judgement)
 
         self._record(session, judgement)
 
@@ -208,10 +231,21 @@ class Tutor:
 
     def _record(self, session: Session, judgement: Judgement) -> None:
         """Writes the judge's verdicts onto the key points."""
+        spoken = [text for who, text in session.history if who == "learner"]
         for point in session.points:
             status = judgement.statuses.get(point.id)
             if status is None:
                 continue
+            # A point is credited only if the words quoted for it can be found
+            # in what the learner actually said. Otherwise it stays open.
+            if (
+                status == "covered"
+                and not point.closed
+                and judgement.evidence is not None
+                and not quote_is_from(judgement.evidence.get(point.id, ""), spoken)
+            ):
+                status = "missing"
+                judgement.statuses[point.id] = "missing"
             if point.closed:
                 # A point the learner explained can reopen only if they now
                 # contradict it. A point the app explained stays closed.

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from app.config import Settings, load_settings
 from app.providers import stt_sarvam, tts_sarvam
-from app.providers.errors import ServiceDown
+from app.providers.errors import DailyCap, ServiceDown
 from app.providers.llm_openrouter import OpenRouter
 from app.ratelimit import RateLimiter
 from app.sessions import SessionStore
@@ -70,10 +70,21 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
     limiter = RateLimiter(settings.rate_limit_per_minute, settings.daily_request_cap)
     tutor = Tutor(judge or LLMJudge(OpenRouter(settings)))
 
+    def visitor_of(request: Request) -> str:
+        """Who is calling. Behind a tunnel or proxy every request arrives from
+        the same address, so use the visitor's own address when it is passed on."""
+        forwarded = request.headers.get("cf-connecting-ip") or request.headers.get(
+            "x-forwarded-for", ""
+        ).split(",")[0]
+        return forwarded.strip() or (request.client.host if request.client else "unknown")
+
+    def came_through_a_proxy(request: Request) -> bool:
+        names = ("cf-connecting-ip", "cf-ray", "x-forwarded-for", "x-forwarded-host", "forwarded")
+        return any(name in request.headers for name in names)
+
     def blocked(request: Request) -> JSONResponse | None:
         """A reply if this visitor must wait, or None to go ahead."""
-        visitor = request.client.host if request.client else "unknown"
-        reason = limiter.check(visitor)
+        reason = limiter.check(visitor_of(request))
         if reason == "daily_cap":
             return error(429, "daily_cap", text=say("daily_cap", "english"),
                          text_hi=say("daily_cap", "hindi"), video_url=settings.video_url)
@@ -83,6 +94,9 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
 
     def service_down(problem: ServiceDown, lang: str, voice: str = "male") -> JSONResponse:
         # Plain words for the learner. The technical detail stays on the server.
+        if isinstance(problem, DailyCap):
+            return error(429, "daily_cap", text=say("daily_cap", "english"),
+                         text_hi=say("daily_cap", "hindi"), video_url=settings.video_url)
         return error(503, "service_down", service=problem.service,
                      text=say("service_down", lang, voice))
 
@@ -117,17 +131,28 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
         session = sessions.get(session_id)
         if session is None:
             return error(404, "session_not_found")
-        if body.redo:
-            # Go back to how things stood before the misheard answer.
-            sessions.rewind(session)
-        sessions.remember(session)
+        # One turn at a time for each session. A second tap while the first
+        # is still being judged is refused instead of being judged twice.
+        if not sessions.begin_turn(session.id):
+            return error(409, "busy")
         try:
-            return tutor.turn(session, body.transcript, body.heard_ok, body.silent)
-        except ServiceDown as problem:
-            # The learner's words were not judged, so they can simply try again.
-            if session.history and session.history[-1][0] == "learner":
-                session.history.pop()
-            return service_down(problem, session.lang, session.voice)
+            if body.redo:
+                # Go back to how things stood before the misheard answer.
+                sessions.rewind(session)
+            sessions.remember(session)
+            try:
+                reply = tutor.turn(session, body.transcript, body.heard_ok, body.silent)
+            except ServiceDown as problem:
+                # Put everything back exactly as it was, so the learner can say
+                # the same answer again and nothing is counted twice.
+                sessions.rewind(session)
+                return service_down(problem, session.lang, session.voice)
+            if reply.get("action") == "done" and not settings.dev_viewer:
+                # The summary is all that is needed now. Forget the words.
+                sessions.forget_words(session)
+            return reply
+        finally:
+            sessions.end_turn(session.id)
 
     @app.get("/api/session/{session_id}/summary")
     def session_summary(session_id: str):
@@ -193,11 +218,17 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
             }
 
         @app.get("/dev/sessions.json")
-        def dev_sessions_json():
+        def dev_sessions_json(request: Request):
+            # Never answer a request that arrived through a tunnel or proxy,
+            # even if the switch was left on by mistake.
+            if came_through_a_proxy(request):
+                return error(404, "not_found")
             return [session_view(s) for s in sessions.recent()]
 
         @app.get("/dev/sessions", response_class=HTMLResponse)
-        def dev_sessions():
+        def dev_sessions(request: Request):
+            if came_through_a_proxy(request):
+                return error(404, "not_found")
             parts = ["<!doctype html><meta charset='utf-8'><title>Samjhao viewer</title>",
                      "<body style='font:16px/1.5 system-ui;max-width:820px;margin:20px auto;padding:0 12px'>",
                      "<h1>Samjhao: conversations in memory</h1>",

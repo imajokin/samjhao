@@ -44,11 +44,15 @@ def transcribe(settings: Settings, audio: bytes, content_type: str) -> dict:
             detail = type(error).__name__
             continue
         if reply.status_code == 200:
-            body = reply.json()
-            return {
-                "transcript": (body.get("transcript") or "").strip(),
-                "language_code": body.get("language_code") or "",
-            }
+            try:
+                body = reply.json()
+                return {
+                    "transcript": str(body.get("transcript") or "").strip(),
+                    "language_code": str(body.get("language_code") or ""),
+                }
+            except (ValueError, AttributeError):
+                detail = "unreadable reply"
+                continue
         if reply.status_code == 400 and "read the file" in reply.text:
             # An empty or broken recording: the same as hearing nothing.
             return {"transcript": "", "language_code": ""}

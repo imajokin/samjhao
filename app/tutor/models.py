@@ -64,6 +64,9 @@ class Judgement:
     hint: str = ""  # the hint inside the reply, if it gave one
     explanation: str = ""  # the explanation inside the reply, if it gave one
     meaning: str = ""  # what the model understood the learner to have said
+    # The learner's own words the model quotes for each point it marks covered.
+    # None means "not supplied" (the fake judge in tests).
+    evidence: dict[int, str] | None = None
 
 
 @dataclass
@@ -84,6 +87,8 @@ class Session:
     current_id: int | None = None  # the key point being asked about
     last_question: str = ""
     not_heard_count: int = 0
+    word_checks: int = 0  # times we asked "did you say X or Y?"
+    held_words: str = ""  # the answer waiting for that word to be settled
     history: list[tuple[str, str]] = field(default_factory=list)  # (who, text)
     notes: list[dict] = field(default_factory=list)  # for the developer's viewer
 

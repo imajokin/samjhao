@@ -43,12 +43,14 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | The opening of the conversation is written by the model too. Whatever the learner says first ("my ma'am told me today that...", a greeting, a broad subject), Samjhao answers like a person and reads it together with everything said so far. Fixed phrases remain only as the backup. | Shubham on 27 Nov: he said "मेरी ma'am ने मुझे आज बताया कि" and got a fixed line back; it must talk like an assistant, not follow a script. |
 | 27 Nov 2026 | Recording now ends after 5 seconds of silence (was 4), and the screen counts down during a pause. An explanation may come in several parts; all of it is judged together. | The recording cut Shubham off in the middle of a sentence. Changes HANDOVER.md 6.1 (4 seconds). |
 | 27 Nov 2026 | A cancel button is shown while recording. Page files carry a version stamp so a browser cannot mix old and new copies. | Shubham asked for cancel; a stale script copy then made it do nothing. |
+| 27 Nov 2026 | Speed: the judge keeps full thinking for now (10 to 17 s per turn). | Shubham's decision after seeing the numbers. |
+| 27 Nov 2026 | Live link: https://samjhao.14061406.xyz, served by a separate copy on Shubham's Mac Mini through its own Cloudflare tunnel (not the office tunnel), open to everyone with no login. The Mini stays on until 2 Dec. | Shubham's decisions on 27 Nov. |
+| 27 Nov 2026 | The live copy has its own OpenRouter key, the developer viewer off, and a cap of 100 paid model calls a day. | Shubham's decisions; keeps public use from draining the testing key and the bill inside the budget. |
 
 ## Open (waiting for Shubham)
 
-- Thinking level for the judge: full thinking takes 10 to 17 s per turn; the lightest level takes 4 to 5 s and followed the rules in 10 of 10 turns.
 - Live demo and video links: to go into app/config.py and README.md once they exist. Until then the no-keys screen points to a README section that says "to be added".
-- How the live link is set up on 14061406.xyz. It must be a separate instance with DEV_VIEWER unset.
+- Live link set-up on the Mini: Shubham's Cloudflare sign-in and the live keys.
 - Three learners finishing a session unaided before the demo is recorded (reviewer's item 6).
 - Sarvam: what balance or limit protects that key. The OpenRouter key has a $10 limit (checked 27 Nov: $2.56 used).
 - Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).

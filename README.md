@@ -25,6 +25,8 @@ docker compose up
 
 Then open http://localhost:8000 in Chrome.
 
+If port 8000 is already in use on your machine, pick another one: `PORT=8080 docker compose up`, then open http://localhost:8080.
+
 ## With no keys
 
 The app starts with no keys and no `.env` file. The home screen appears and says clearly that keys are not set, with the mic switched off. The tutor itself does not listen or reply until the keys are added.

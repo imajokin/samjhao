@@ -46,11 +46,12 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Speed: the judge keeps full thinking for now (10 to 17 s per turn). | Shubham's decision after seeing the numbers. |
 | 27 Nov 2026 | Live link: https://samjhao.14061406.xyz, served by a separate copy on Shubham's Mac Mini through its own Cloudflare tunnel (not the office tunnel), open to everyone with no login. The Mini stays on until 2 Dec. | Shubham's decisions on 27 Nov. |
 | 27 Nov 2026 | The live copy has its own OpenRouter key, the developer viewer off, and a cap of 100 paid model calls a day. | Shubham's decisions; keeps public use from draining the testing key and the bill inside the budget. |
+| 27 Nov 2026 | The live link is up at https://samjhao.14061406.xyz. It runs from ~/Projects/samjhao-live on the Mac Mini (port 8017, Colima), through a Cloudflare tunnel named "samjhao" with its settings in ~/.cloudflared/samjhao.yml. The tunnel and Colima start by themselves at login; the container restarts by itself. The address is written into app/config.py and the README. | Set up with Shubham on 27 Nov. To update the live copy: on the Mini, in that folder, git pull and docker compose up -d --build. |
 
 ## Open (waiting for Shubham)
 
-- Live demo and video links: to go into app/config.py and README.md once they exist. Until then the no-keys screen points to a README section that says "to be added".
-- Live link set-up on the Mini: Shubham's Cloudflare sign-in and the live keys.
+- Video link: to go into app/config.py and README.md once the video exists.
+- A test of the live link on a real Android phone on mobile data.
 - Three learners finishing a session unaided before the demo is recorded (reviewer's item 6).
 - Sarvam: what balance or limit protects that key. The OpenRouter key has a $10 limit (checked 27 Nov: $2.56 used).
 - Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).

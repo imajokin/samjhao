@@ -61,6 +61,11 @@ class KeylessStart(unittest.TestCase):
             set(config), {"judging", "speech", "live_demo_url", "video_url", "phrases"}
         )
 
+    def test_no_keys_screen_gets_the_live_demo_link_without_any_env_file(self):
+        with mock.patch.dict(os.environ, {"LIVE_DEMO_URL": ""}):
+            config = TestClient(create_app(load_settings())).get("/api/config").json()
+        self.assertTrue(config["live_demo_url"].startswith("https://"))
+
     def test_key_routes_answer_cleanly(self):
         paths = ("/api/session/start", "/api/session/abc/turn", "/api/transcribe", "/api/speak")
         for path in paths:

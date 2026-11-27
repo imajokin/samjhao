@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 # The links shown on the no-keys screen. Reviewers start the app with no .env
 # file, so these must live in the code. They are filled in before submission.
-DEFAULT_LIVE_DEMO_URL = ""
+DEFAULT_LIVE_DEMO_URL = "https://samjhao.14061406.xyz"
 DEFAULT_VIDEO_URL = ""
 
 # The judging model and OpenRouter's address. Shubham switched to Claude

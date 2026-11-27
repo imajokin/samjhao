@@ -12,7 +12,7 @@ Built for Build for Bharat (India Runs on Voice), Round 2, between 27 and 30 Nov
 
 ## Live demo and video
 
-- Live demo: to be added before submission
+- Live demo: https://samjhao.14061406.xyz (open it in Chrome on a phone or laptop and allow the microphone)
 - Video (3 minutes): to be added before submission
 
 The tutor needs two paid keys, so the live demo and the video are where you can see it working.

@@ -6,25 +6,37 @@ The engine, not the model, decides what happens next.
 """
 
 KEY_POINTS_PROMPT = """You are preparing a hidden checklist for a tutor that listens to a learner explain a concept aloud.
-Topic: {topic}
-Level: {level}
+What the learner said they will explain (from speech, so spelling may be rough): {topic}
+Level they gave separately: {level}
 Learner's language: {language}
+Topic already confirmed by the learner: {confirmed}
 
-Decide the status first:
-- "too_broad" if this is a whole subject or chapter, not one concept. Give narrow_subject.
+Decide the status first, in this order:
+- "confirm" if the topic text looks garbled by speech recognition and you are guessing what was meant. Put your best guess in topic_clean. Never use this status if the topic is already confirmed.
+- "too_broad" if this is a whole subject or chapter, not one concept (for example "physics"). Put the subject in narrow_subject.
 - "not_a_concept" if there is nothing to explain.
+- "need_level" if no class or level was given, in the topic text or separately. An adult may give "college" or "general".
 - "unsure" if you are not confident you can list the key points correctly at this level. Give one nearby_topic you are confident about.
 - "ok" otherwise.
 
-If "ok", write 3 to 5 key points that a correct explanation at this level must include, in the order a good explanation would say them. Each must be checkable from speech. No trivia, no extra facts beyond the level.
+Always fill topic_clean (the topic, tidied) and level (the class or level you found, or an empty string).
+
+If "ok", write 3 to 5 key points that a correct explanation at this level must include, in the order a good explanation would say them.
+- Each key point is one positive idea that can be checked from speech: something a good explanation says.
+- Never write a key point that denies a wrong idea ("X is not true", "it is not caused by X", "X does not do Y"). Put the usual wrong idea in common_mistake of the key point it contradicts.
+  Bad key point: "The Sun does not move around the Earth." Good: the key point "The Earth spins on its own axis." with common_mistake "The Sun goes around the Earth."
+- The key point that learners most often get wrong must be in the list.
+- A learner who gives a complete, correct explanation at this level must cover every key point without being asked.
+- No examples as key points, no trivia, no side facts, no numbers or values, and no formula unless this level cannot explain the concept without it.
 
 For each key point give:
 - statement: one sentence, in English.
 - common_mistake: the usual wrong idea, or an empty string.
-- hint: one short sentence in the learner's language that points toward the idea without stating it.
-- explanation: two short sentences in the learner's language.
+- question: one short question (under 20 words) in the learner's language that leads toward this idea. It must not state the idea, and must not offer the answer as one of two options ("X या Y?").
+- hint: one short sentence in the learner's language that points the learner where to look. It must not state the idea or the answer.
+- explanation: two short sentences in the learner's language that state the idea plainly.
 
-Write Hindi in Devanagari and keep technical terms in English.
+Language rules for question, hint and explanation: speak like a friendly older sibling, use "तुम". Write every Hindi word in Devanagari, never in Latin letters. Keep English and technical words in Latin letters, as textbooks do (write "discharge", not "डिस्चार्ज").
 If the status is not "ok", return an empty key_points list.
 Return JSON only."""
 
@@ -33,9 +45,10 @@ KEY_POINTS_SCHEMA = {
     "properties": {
         "status": {
             "type": "string",
-            "enum": ["ok", "too_broad", "not_a_concept", "unsure"],
+            "enum": ["ok", "confirm", "too_broad", "not_a_concept", "need_level", "unsure"],
         },
         "topic_clean": {"type": "string"},
+        "level": {"type": "string"},
         "narrow_subject": {"type": "string"},
         "nearby_topic": {"type": "string"},
         "key_points": {
@@ -46,15 +59,30 @@ KEY_POINTS_SCHEMA = {
                     "id": {"type": "integer"},
                     "statement": {"type": "string"},
                     "common_mistake": {"type": "string"},
+                    "question": {"type": "string"},
                     "hint": {"type": "string"},
                     "explanation": {"type": "string"},
                 },
-                "required": ["id", "statement", "common_mistake", "hint", "explanation"],
+                "required": [
+                    "id",
+                    "statement",
+                    "common_mistake",
+                    "question",
+                    "hint",
+                    "explanation",
+                ],
                 "additionalProperties": False,
             },
         },
     },
-    "required": ["status", "topic_clean", "narrow_subject", "nearby_topic", "key_points"],
+    "required": [
+        "status",
+        "topic_clean",
+        "level",
+        "narrow_subject",
+        "nearby_topic",
+        "key_points",
+    ],
     "additionalProperties": False,
 }
 
@@ -78,15 +106,36 @@ Rules:
 - Judge by meaning, not wording. Accept any pronunciation, spelling or transliteration of a term, and its Hindi name.
 - Be lenient about grammar and fluency. Be strict about facts: a wrong statement must be marked "wrong", never "covered".
 - Mark "covered" only if you can quote the learner's words as evidence. Put that quote in evidence. For "missing", evidence is an empty string. For "wrong", quote the wrong words.
+- "wrong" means the learner said something that contradicts the point. If they simply did not mention it, it is "missing".
+- Do not ask for more detail than the key point states. If the learner said the idea, it is covered.
+- If the learner's explanation is complete and correct, mark every point covered. Never invent a gap.
 - Do not count anything the tutor said (hints, explanations) as the learner's knowledge.
 - A point already covered earlier stays covered unless the learner now contradicts it.
+- A point marked "explained by the tutor" is closed. Repeat its last status and never choose it as the gap.
 
-Then find the first key point, in order, that is missing or wrong. Put its id in first_gap_id, or null if every point is covered.
+Then choose the gap to ask about, among the points that are still open:
+- If any point is "wrong", choose the first wrong one, in order.
+- Otherwise choose the first "missing" one, in order.
+Put its id in first_gap_id, or null if every point is covered or closed.
 
-Write ONE follow-up question about that point only: under 20 words, does not reveal the answer, in the language the learner used most in their latest words. Hindi in Devanagari, technical terms in English. Warm tone, like a friendly older sibling. Never use the words "wrong" or "galat". If every point is covered, follow_up is an empty string.
+Before writing the question, fill must_not_say: the few words that are the answer to that point (the words the learner has to come up with). The question must contain none of them.
+
+Write ONE follow-up question about that point only. If every point is covered or closed, follow_up and must_not_say are empty strings.
+- Exactly one question, with one question mark. Never join two questions with "और" or "and".
+- Under 20 words.
+- It must not reveal the answer or name the missing idea. Never offer the answer as one of two options ("X या Y?").
+- If the point is "wrong", point at what the learner said, so they can rethink it.
+- Use the language the learner used most in their latest words. Write every Hindi word in Devanagari, never in Latin letters, even if the transcript is in Latin letters. Keep English and technical words in Latin letters (write "thunder", not "थंडर").
+- No praise before the question.
+Examples for the point "Action and reaction act on two different bodies" when the learner said the forces cancel:
+  Bad (gives options): "ये forces एक ही body पर लगते हैं या अलग-अलग bodies पर?"
+  Bad (reveals): "ये forces किन दो अलग-अलग bodies पर लगते हैं?"
+  Bad (two questions): "ये forces कहाँ लगते हैं, और cancel क्यों नहीं होते?"
+  Good: "तुमने कहा दोनों forces cancel हो जाते हैं। ये forces किस पर लगते हैं?"
+- Warm tone, like a friendly older sibling. Use "तुम", not "आप". Never use the words "wrong" or "galat" or "गलत".
 
 Also report:
-- dont_know: true if the learner said they do not know.
+- dont_know: true if the learner said they do not know ("pata nahi", "I don't know").
 - off_topic: true if the learner talked about something else.
 - reply_lang: "hindi", "english" or "hinglish", the language the learner used most in their latest words.
 - unclear_word: if your judgement of a point depends on one word that may have been misheard, give the word heard and the likely alternative. Otherwise null.
@@ -126,6 +175,7 @@ JUDGE_SCHEMA = {
                 },
             ]
         },
+        "must_not_say": {"type": "string"},
         "follow_up": {"type": "string"},
     },
     "required": [
@@ -135,31 +185,9 @@ JUDGE_SCHEMA = {
         "off_topic",
         "reply_lang",
         "unclear_word",
+        "must_not_say",
         "follow_up",
     ],
-    "additionalProperties": False,
-}
-
-# Used only when a verdict model that cannot write (Jev) does the judging.
-# A regular model then writes the question for the gap that was found.
-FOLLOW_UP_PROMPT = """A learner is explaining a concept aloud. A judge has found the first point they missed or got wrong.
-Topic: {topic}
-Level: {level}
-The point: {statement}
-The judge's verdict on it: {status}
-The learner's latest words:
-\"\"\"{transcript}\"\"\"
-
-Write ONE follow-up question about that point only: under 20 words, does not reveal the answer, in the language the learner used most. Hindi in Devanagari, technical terms in English. Warm tone, like a friendly older sibling. Never use the words "wrong" or "galat".
-Return JSON only."""
-
-FOLLOW_UP_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "reply_lang": {"type": "string", "enum": ["hindi", "english", "hinglish"]},
-        "follow_up": {"type": "string"},
-    },
-    "required": ["reply_lang", "follow_up"],
     "additionalProperties": False,
 }
 

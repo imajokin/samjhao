@@ -24,17 +24,18 @@ sys.path.insert(0, str(ROOT))
 from app.tutor import prompts  # noqa: E402
 
 CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
-DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
 
-# Regular models: each does both jobs (key points, then verdict + question).
+# The judging model Shubham picked on 27 Nov 2026. To compare others, run with
+# MODELS=model-one,model-two python3 scripts/try_prompts.py
 MODELS = [
-    "anthropic/claude-haiku-5.5",
-    "openai/gpt-6-luna",
-    "openai/gpt-6.1-terra",
+    m.strip()
+    for m in os.environ.get("MODELS", "anthropic/claude-haiku-5.5").split(",")
+    if m.strip()
 ]
-# Jev only gives the verdict. This model writes the key points and the question.
-JEV_MODEL = "typesafe/jev-1.14"
-JEV_WRITER = "anthropic/claude-haiku-5.5"
+RUNS = int(os.environ.get("RUNS", "1"))
+# Whether the model "thinks" before answering. Off is about twice as fast.
+THINK_SETUP = os.environ.get("THINK_SETUP", "off") == "on"
+THINK_TURN = os.environ.get("THINK_TURN", "off") == "on"
 
 SAMPLES = [
     {
@@ -68,7 +69,7 @@ SAMPLES = [
     {
         "id": 5,
         "topic": "Compound interest",
-        "level": "not given",
+        "level": "Class 8",
         "said": "Compound interest mein har saal same interest milta hai principal par, bas rate zyada hota hai.",
         "must_catch": "Interest is earned on earlier interest too.",
     },
@@ -121,9 +122,12 @@ def parse_json(text: str) -> dict:
     return json.loads(text[start : end + 1])
 
 
-def ask_model(key: str, model: str, prompt: str, schema: dict, name: str) -> dict:
+def ask_model(
+    key: str, model: str, prompt: str, schema: dict, name: str, think: bool = False
+) -> dict:
     """Asks a regular model for JSON. Retries once without the strict schema."""
     body = {
+        "reasoning": {"enabled": think},
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 4000,
@@ -147,55 +151,18 @@ def ask_model(key: str, model: str, prompt: str, schema: dict, name: str) -> dic
     raise RuntimeError(f"{model}: {last_error}")
 
 
-def ask_jev(key: str, sample: dict, points: list[dict]) -> dict:
-    """Asks Jev for a verdict on each key point."""
-    questions = {}
-    for point in points:
-        questions[f"point_{point['id']}"] = {
-            "type": "choice",
-            "instructions": (
-                "A learner is explaining the topic aloud. Judge by meaning, not wording, "
-                "and be strict about facts. Did the learner's own words cover this key point: "
-                f"{point['statement']}"
-            ),
-            "criteria": {
-                "covered": "The learner clearly and correctly said this idea in their own words.",
-                "missing": "The learner did not say this idea.",
-                "wrong": "The learner said something that contradicts this idea, or stated the usual wrong idea: "
-                + (point.get("common_mistake") or "none listed"),
-            },
-        }
-    questions["dont_know"] = {
-        "type": "noul",
-        "instructions": "Did the learner say that they do not know?",
-    }
-    questions["off_topic"] = {
-        "type": "noul",
-        "instructions": "Did the learner talk about something other than the topic?",
-    }
-    body = {
-        "model": JEV_MODEL,
-        "state": {
-            "topic": sample["topic"],
-            "level": sample["level"],
-            "learner_said": sample["said"],
-        },
-        "questions": questions,
-    }
-    data, seconds = post(DECISIONS_URL, key, body)
-    usage = data.get("usage") or {}
-    return {"answers": data.get("answers") or {}, "seconds": seconds, "cost": usage.get("cost") or 0.0}
-
-
 def key_points_prompt(sample: dict) -> str:
     return prompts.KEY_POINTS_PROMPT.format(
-        topic=sample["topic"], level=sample["level"], language="Hindi mixed with English"
+        topic=sample["topic"],
+        level=sample["level"],
+        language="Hindi mixed with English",
+        confirmed="yes",
     )
 
 
 def run_regular(key: str, model: str, sample: dict) -> dict:
     """One model does both jobs for one sample."""
-    made = ask_model(key, model, key_points_prompt(sample), prompts.KEY_POINTS_SCHEMA, "key_points")
+    made = ask_model(key, model, key_points_prompt(sample), prompts.KEY_POINTS_SCHEMA, "key_points", THINK_SETUP)
     points = made["answer"].get("key_points", [])
     judged = ask_model(
         key,
@@ -210,6 +177,7 @@ def run_regular(key: str, model: str, sample: dict) -> dict:
         ),
         prompts.JUDGE_SCHEMA,
         "judgement",
+        THINK_TURN,
     )
     return {
         "key_points_status": made["answer"].get("status"),
@@ -222,65 +190,9 @@ def run_regular(key: str, model: str, sample: dict) -> dict:
     }
 
 
-def run_jev(key: str, sample: dict) -> dict:
-    """Jev gives the verdict; a regular model writes key points and the question."""
-    made = ask_model(key, JEV_WRITER, key_points_prompt(sample), prompts.KEY_POINTS_SCHEMA, "key_points")
-    points = made["answer"].get("key_points", [])
-    verdict = ask_jev(key, sample, points)
-    answers = verdict["answers"]
-
-    judged_points, first_gap = [], None
-    for point in points:
-        answer = answers.get(f"point_{point['id']}") or {}
-        status = answer.get("choice", "no answer")
-        judged_points.append(
-            {"id": point["id"], "status": status, "confidence": answer.get("confidence")}
-        )
-        if first_gap is None and status != "covered":
-            first_gap = point
-
-    seconds, cost, follow_up, lang = verdict["seconds"], verdict["cost"], "", ""
-    if first_gap is not None:
-        status = next(p["status"] for p in judged_points if p["id"] == first_gap["id"])
-        written = ask_model(
-            key,
-            JEV_WRITER,
-            prompts.FOLLOW_UP_PROMPT.format(
-                topic=sample["topic"],
-                level=sample["level"],
-                statement=first_gap["statement"],
-                status=status,
-                transcript=sample["said"],
-            ),
-            prompts.FOLLOW_UP_SCHEMA,
-            "follow_up",
-        )
-        seconds += written["seconds"]
-        cost += written["cost"]
-        follow_up = written["answer"].get("follow_up", "")
-        lang = written["answer"].get("reply_lang", "")
-
-    return {
-        "key_points_status": made["answer"].get("status"),
-        "key_points": points,
-        "judgement": {
-            "points": judged_points,
-            "first_gap_id": first_gap["id"] if first_gap else None,
-            "dont_know": (answers.get("dont_know") or {}).get("noul"),
-            "off_topic": (answers.get("off_topic") or {}).get("noul"),
-            "reply_lang": lang,
-            "follow_up": follow_up,
-        },
-        "setup_seconds": round(made["seconds"], 2),
-        "turn_seconds": round(seconds, 2),
-        "setup_cost": made["cost"],
-        "turn_cost": cost,
-    }
-
-
 def run_one(key: str, arm: str, sample: dict) -> dict:
     try:
-        result = run_jev(key, sample) if arm == "jev" else run_regular(key, arm, sample)
+        result = run_regular(key, arm, sample)
     except Exception as error:  # noqa: BLE001 - one failure must not stop the rest
         result = {"error": str(error)}
     return {"arm": arm, "sample": sample["id"], **result}
@@ -301,11 +213,14 @@ def print_report(results: list[dict]) -> None:
             status_by_id = {p["id"]: p for p in judgement.get("points", [])}
             for point in result["key_points"]:
                 judged = status_by_id.get(point["id"], {})
-                confidence = judged.get("confidence")
-                extra = f" (confidence {confidence})" if confidence is not None else ""
-                print(f"  [{judged.get('status', '?'):>7}]{extra} {point['statement']}")
+                print(f"  [{judged.get('status', '?'):>7}] {point['statement']}")
             print(f"  First gap: point {judgement.get('first_gap_id')}")
             print(f"  Question:  {judgement.get('follow_up')}")
+            gap = next((p for p in result["key_points"] if p["id"] == judgement.get("first_gap_id")), None)
+            if gap:
+                print(f"  Ready question: {gap.get('question')}")
+                print(f"  Hint:           {gap.get('hint')}")
+                print(f"  Explanation:    {gap.get('explanation')}")
             print(
                 f"  Time: setup {result['setup_seconds']}s, turn {result['turn_seconds']}s"
                 f" | Cost: setup ${result['setup_cost']:.5f}, turn ${result['turn_cost']:.5f}"
@@ -318,8 +233,7 @@ def main() -> None:
         print("OPENROUTER_API_KEY is not set in .env. Nothing was run.")
         sys.exit(1)
 
-    arms = MODELS + ["jev"]
-    jobs = [(arm, sample) for sample in SAMPLES for arm in arms]
+    jobs = [(arm, sample) for sample in SAMPLES for arm in MODELS for _ in range(RUNS)]
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(lambda job: run_one(key, *job), jobs))
 
@@ -330,6 +244,13 @@ def main() -> None:
 
     print_report(results)
     total = sum(r.get("setup_cost", 0) + r.get("turn_cost", 0) for r in results)
+    ok = [r for r in results if "error" not in r]
+    if ok:
+        print(
+            f"\nThinking: setup {'on' if THINK_SETUP else 'off'}, turn {'on' if THINK_TURN else 'off'}"
+            f" | average setup {sum(r['setup_seconds'] for r in ok) / len(ok):.1f}s,"
+            f" average turn {sum(r['turn_seconds'] for r in ok) / len(ok):.1f}s"
+        )
     print(f"\nTotal spent on this run: ${total:.4f}")
     print(f"Full results saved to {out_file}")
 

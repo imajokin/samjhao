@@ -13,13 +13,14 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Colima (free, no account) runs Docker on the laptop for testing. | Shubham approved; no Docker runner was installed. |
 | 27 Nov 2026 | Jev (TypeSafe AI, through OpenRouter) joins the judging comparison as "Jev gives the verdict, a regular model writes the key points and the question". | Shubham asked for it; Jev does not write text, so it can only do the verdict half. It stays only if it catches every planted mistake. |
 | 27 Nov 2026 | The live demo and video links on the no-keys screen are written into the code (app/config.py), with .env able to override them. | Reviewers start with no .env, so links kept only in .env would not appear. Proposed by Claude; tell Shubham if he objects. |
+| 27 Nov 2026 | Judging model: Claude Haiku 5.5 through OpenRouter. | Shubham picked it after the 27 Nov comparison: best at aiming the question at the real mistake, and the extra 0.7 s per turn over GPT-6 Luna does not matter to him. |
+| 27 Nov 2026 | Jev is not used. | In the comparison it marked a fully correct explanation as incomplete, and its route is still alpha. |
+| 27 Nov 2026 | Samjhao asks about a point the learner got wrong before a point they merely skipped. | Shubham's decision; changes HANDOVER.md 6.2 rule 3 ("first missing or wrong"). It shows the learner the app really listened. |
+| 27 Nov 2026 | Total budget ceiling for the four days: $25 across all keys. | Shubham agreed. |
 
 ## Open (waiting for Shubham)
 
-- The new OpenRouter key in .env, with a credit limit (suggested $10).
-- The regular models to compare (proposed: Claude Haiku 5.5, GPT-6 Luna, GPT-6.1 Terra, Claude Fable 5.2 as the benchmark, plus Jev).
-- What matters most if models disagree (proposed: catching every mistake, then speed, then cost).
-- Total budget for the four days (proposed: $25 ceiling).
+- Batch 2 (voice, transcript style), batch 3 (languages, limits), hosting and GitHub, people and proof: asked as each part comes up.
 
 ## Checked against live documentation (27 Nov 2026)
 

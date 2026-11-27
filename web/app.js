@@ -204,6 +204,9 @@ function listen() {
       onPiece: (blob) => pieces.push(Api.transcribe(blob)),
       onStop: async (reason, heardVoice) => {
         setMic("busy");
+        const writing = phrase("thinking_writing", "तुम्हारी बात लिख रहा हूँ…");
+        byId("mic-label").textContent = writing;
+        byId("talk-mic-label").textContent = writing;
         const replies = await Promise.all(pieces);
         const failed = replies.some((reply) => !reply.ok);
         const texts = replies.map((reply) => (reply.ok && reply.data.transcript) || "");
@@ -281,10 +284,28 @@ async function speak(text) {
 
 // ----- Talking -----
 
-function setBusy(busy) {
+// A quick guess at the language of what the learner just said, so the
+// waiting line is in their language even before the server has replied.
+function guessLanguage(text) {
+  if (/[\u0A00-\u0A7F]/.test(text)) return "punjabi";
+  if (/[\u0C00-\u0C7F]/.test(text)) return "telugu";
+  if (/[\u0C80-\u0CFF]/.test(text)) return "kannada";
+  if (/[\u0900-\u097F]/.test(text)) return "hinglish";
+  if (/\b(hai|hain|ka|ki|ke|ko|mein|aur|kya|kyunki|nahi|hota|hoti|hote|se|par|toh|isliye)\b/i.test(text)) {
+    return "hinglish";
+  }
+  return "";
+}
+
+// While the learner waits, say exactly what Samjhao is doing:
+// "writing" (turning speech into text), "topic", "question" or "hint".
+function setBusy(busy, kind) {
   state.busy = busy;
   byId("thinking").hidden = !busy;
-  byId("thinking").textContent = phrase("thinking", "सोच रहा हूँ…");
+  byId("tutor-text").classList.toggle("waiting", busy);
+  if (busy) {
+    byId("thinking").textContent = phrase("thinking_" + (kind || "question"), "थोड़ा रुको…");
+  }
   for (const button of document.querySelectorAll(".send")) {
     button.disabled = busy;
   }
@@ -335,7 +356,7 @@ async function giveUp() {
   if (!state.sessionId || state.busy || Recorder.active) return;
   Player.unlock();
   Player.stop();
-  setBusy(true);
+  setBusy(true, "hint");
   const reply = await Api.turn(state.sessionId, "", { silent: true });
   setBusy(false);
   if (!reply.ok) {
@@ -366,13 +387,13 @@ async function beginTopic(topicText, languageCode, spoken) {
   const text = (topicText || "").trim();
   if (!text || state.busy || !haveLevel()) return;
   state.sessionId = null;
-  state.lang = "hinglish";
+  state.lang = guessLanguage(text) || "hinglish";
   byId("tutor-text").textContent = "";
   byId("give-up").hidden = true;
   showHeard(text, false);
   showProgress(null);
   show("talk");
-  setBusy(true);
+  setBusy(true, "topic");
   const reply = await Api.start(text, chosenVoice(), languageCode, chosenLevel());
   setBusy(false);
   if (!reply.ok) {
@@ -393,7 +414,8 @@ async function sendAnswer(text, flags, spoken) {
     return;
   }
   if (answer) showHeard(answer, spoken);
-  setBusy(true);
+  state.lang = guessLanguage(answer) || state.lang;
+  setBusy(true, "question");
   const reply = await Api.turn(state.sessionId, answer, flags);
   setBusy(false);
   if (!reply.ok) {

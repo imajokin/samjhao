@@ -540,3 +540,31 @@ body {
 #home .prompt-hi { font-size: 1.2rem; }
 #home .prompt-en { margin: 4px 0 12px; font-size: 0.95rem; }
 #home .mic { width: 100px; height: 100px; }
+
+/* ----- The waiting line: says plainly what Samjhao is doing ----- */
+
+.thinking {
+  width: 100%;
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  background: #e8f0fe;
+  border: 2px solid var(--brand);
+  border-radius: 12px;
+  color: var(--brand);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1.1rem;
+  animation: waiting 1.4s ease-in-out infinite;
+}
+
+@keyframes waiting {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking { animation: none; }
+}
+
+/* The earlier question fades while the next one is being prepared. */
+.tutor-text.waiting { opacity: 0.4; }

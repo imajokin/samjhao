@@ -85,7 +85,10 @@ class Settings:
         from app.tutor.strings import LANGUAGES, STRINGS
 
         # The few fixed phrases the page itself shows, in each language.
-        page_keys = ("thinking", "new_topic_button", "rerecord_button", "not_heard", "give_up_button")
+        page_keys = (
+            "thinking_writing", "thinking_topic", "thinking_question", "thinking_hint",
+            "new_topic_button", "rerecord_button", "not_heard", "give_up_button",
+        )
         phrases = {
             lang: {key: STRINGS[key][lang] for key in page_keys} for lang in LANGUAGES
         }

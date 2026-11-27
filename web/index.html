@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Samjhao: a voice tutor that listens</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="screen" id="home">
+    <header class="brand">
+      <h1>Samjhao</h1>
+      <p class="tagline">समझाओ · a voice tutor that listens</p>
+    </header>
+
+    <!-- Shown only when a key is missing. Filled in by app.js. -->
+    <section class="notice" id="notice" role="status" hidden>
+      <h2 id="notice-title"></h2>
+      <p id="notice-hi" lang="hi"></p>
+      <p id="notice-en" lang="en"></p>
+      <p class="notice-links" id="notice-links" hidden>
+        <a id="link-demo" class="button-link" hidden>Open the live demo</a>
+        <a id="link-video" class="button-link" hidden>Watch the video</a>
+      </p>
+      <p class="notice-links-pending" id="notice-links-pending" hidden>
+        The live demo and video links are in the README.
+      </p>
+    </section>
+
+    <section class="prompt">
+      <p class="prompt-hi" lang="hi">आज क्या समझाओगे? Topic बोलो, और अपनी class बताओ।</p>
+      <p class="prompt-en" lang="en">What will you explain today? Say the topic and your class.</p>
+    </section>
+
+    <button class="mic" id="mic" type="button" disabled aria-label="Mic (off until keys are set)">
+      <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
+        <path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.6a6 6 0 0 0 5-5.9z"/>
+      </svg>
+    </button>
+    <p class="mic-label" id="mic-label">Checking…</p>
+
+    <section class="examples" aria-label="Example topics">
+      <p class="examples-title">Not sure? Try one of these:</p>
+      <div class="chips">
+        <button class="chip" type="button" disabled>Newton's third law, Class 11</button>
+        <button class="chip" type="button" disabled>Compound interest</button>
+        <button class="chip" type="button" disabled>Why the moon has phases</button>
+      </div>
+    </section>
+
+    <section class="how">
+      <h2>How it works</h2>
+      <ol>
+        <li>Say any topic, in Hindi, English or a mix.</li>
+        <li>Explain it aloud, as if to your younger brother.</li>
+        <li>Samjhao asks one short question about the part you skipped. It does not give the answer.</li>
+        <li>See which points you explained on your own.</li>
+      </ol>
+      <p class="privacy">No login. Nothing is stored after a session.</p>
+    </section>
+  </main>
+
+  <noscript>
+    <p class="noscript">Samjhao needs JavaScript to listen and reply. Please turn it on in your browser.</p>
+  </noscript>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

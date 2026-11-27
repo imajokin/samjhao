@@ -1,0 +1,187 @@
+/* Samjhao: mobile-first, large text, strong contrast, works at 360 px. */
+
+:root {
+  --bg: #fffaf0;
+  --ink: #1b1b1f;
+  --muted: #4a4a55;
+  --brand: #0b3d91;
+  --brand-ink: #ffffff;
+  --accent: #ffc233;
+  --notice-bg: #fff1c2;
+  --notice-border: #8a5a00;
+  --off: #9a9aa5;
+  --line: #d9d3c3;
+}
+
+* { box-sizing: border-box; }
+
+/* Anything marked hidden stays hidden, whatever its display rule says. */
+[hidden] { display: none !important; }
+
+html { font-size: 18px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans",
+    "Noto Sans Devanagari", sans-serif;
+  line-height: 1.5;
+}
+
+.screen {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  color: var(--brand);
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  margin: 2px 0 16px;
+  color: var(--muted);
+}
+
+/* The "keys are not set" message. */
+.notice {
+  width: 100%;
+  background: var(--notice-bg);
+  border: 2px solid var(--notice-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.notice h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.notice p { margin: 6px 0; }
+
+.notice-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.button-link {
+  display: inline-block;
+  background: var(--brand);
+  color: var(--brand-ink);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+
+.notice-links-pending { color: var(--muted); font-size: 0.95rem; }
+
+.prompt-hi {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.prompt-en {
+  margin: 6px 0 20px;
+  color: var(--muted);
+}
+
+/* One large mic button: at least 96 px wide. */
+.mic {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--brand);
+  color: var(--brand-ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 0 var(--accent);
+}
+
+.mic:disabled {
+  background: var(--off);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.mic-label {
+  margin: 12px 0 24px;
+  font-weight: 600;
+}
+
+.examples { width: 100%; }
+
+.examples-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.chip {
+  font: inherit;
+  background: #ffffff;
+  color: var(--ink);
+  border: 2px solid var(--brand);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.chip:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.how {
+  width: 100%;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 2px solid var(--line);
+  text-align: left;
+}
+
+.how h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.how ol {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.how li { margin-bottom: 6px; }
+
+.privacy {
+  margin-top: 14px;
+  color: var(--muted);
+}
+
+.noscript {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+  font-weight: 600;
+}

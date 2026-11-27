@@ -24,8 +24,8 @@ class KeyPoint:
     # What has happened in this session:
     result: str | None = None  # None while open, then GREEN or AMBER
     last_status: str = "missing"  # the judge's latest word: covered, missing, wrong
-    fresh_hint: str = ""  # the judge's newest hint, written for the learner's last words
     hints: list[str] = field(default_factory=list)  # the hints given so far (two allowed)
+    clarifies: int = 0  # times the learner asked us something about this point
 
     @property
     def closed(self) -> bool:
@@ -47,19 +47,23 @@ class TopicPlan:
 
 @dataclass
 class Judgement:
-    """Call B's answer for one learner turn."""
+    """Call B's answer for one learner turn: the verdicts, and the reply."""
 
     statuses: dict[int, str]  # key point id -> covered, missing or wrong
-    first_gap_id: int | None = None
     dont_know: bool = False
     off_topic: bool = False
+    learner_asked: bool = False  # they asked us something instead of answering
     reply_lang: str = "hinglish"
     unclear_word: dict | None = None
-    follow_up: str = ""
-    # A hint and an explanation for the gap, in the language the learner is
-    # speaking now. They replace the ones written when the session started.
-    hint: str = ""
-    explanation: str = ""
+    # The move the model made and the reply it wrote. The engine uses the
+    # reply only if the move is the one its rules allow.
+    move: str = ""  # ask, hint1, hint2, explain, done, clarify, off_topic
+    about_id: int | None = None  # the key point the reply's question is about
+    reply: str = ""  # the whole spoken reply
+    question: str = ""  # the question inside the reply
+    hint: str = ""  # the hint inside the reply, if it gave one
+    explanation: str = ""  # the explanation inside the reply, if it gave one
+    meaning: str = ""  # what the model understood the learner to have said
 
 
 @dataclass
@@ -81,6 +85,7 @@ class Session:
     last_question: str = ""
     not_heard_count: int = 0
     history: list[tuple[str, str]] = field(default_factory=list)  # (who, text)
+    notes: list[dict] = field(default_factory=list)  # for the developer's viewer
 
     def point(self, point_id: int | None) -> KeyPoint | None:
         return next((p for p in self.points if p.id == point_id), None)

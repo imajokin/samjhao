@@ -1,8 +1,11 @@
 """The tutor engine: the rules of the conversation (HANDOVER.md 6.2).
 
-The language model only judges what the learner said and words the question.
-This file decides what happens next: ask, hint, explain, move on or finish.
-That keeps the counting honest and makes loops impossible:
+The language model judges what the learner said and writes each reply in
+natural, spoken words. This file decides which kind of reply is allowed
+next: ask, first hint, stronger hint, explain, or finish. The model is told
+the same rules, and its reply is used only if it made the same move this
+file worked out. Otherwise ready phrases are used. That keeps the counting
+honest and makes loops impossible:
 
 - each key point gets two hints, the second one stronger than the first;
 - "I don't know", silence, the give-up button and a missed answer all count
@@ -20,6 +23,8 @@ from app.tutor.strings import say
 
 MIN_FIRST_EXPLANATION_WORDS = 5
 MAX_HINTS = 2  # hints per key point before the app explains it
+MAX_CLARIFIES = 2  # times per point the learner may ask us something for free
+GAVE_UP = "(the learner tapped the button: I don't know)"
 NOT_HEARD_BEFORE_TEXT_BOX = 2
 
 
@@ -107,7 +112,7 @@ class Tutor:
         heard_ok: bool = True,
         silent: bool = False,
     ) -> dict:
-        """The learner has spoken (or stayed silent after a question)."""
+        """The learner has spoken, or tapped "I don't know"."""
         transcript = (transcript or "").strip()
 
         if session.phase == "summary":
@@ -115,38 +120,72 @@ class Tutor:
         if session.phase in ("topic", "level", "confirm"):
             return self._setup_turn(session, transcript)
 
-        # Silence after a question, or the give-up button: "I do not know".
-        if silent and session.phase == "follow_up":
-            return self._stuck(session, session.point(session.current_id))
-
-        too_short = (
-            session.phase == "explain"
-            and word_count(transcript) < MIN_FIRST_EXPLANATION_WORDS
-        )
-        if not heard_ok or not transcript or too_short:
-            return self._not_heard(session)
+        gave_up = silent and session.phase == "follow_up"
+        if gave_up:
+            transcript = GAVE_UP
+        else:
+            too_short = (
+                session.phase == "explain"
+                and word_count(transcript) < MIN_FIRST_EXPLANATION_WORDS
+            )
+            if not heard_ok or not transcript or too_short:
+                return self._not_heard(session)
         session.not_heard_count = 0
 
         session.history.append(("learner", transcript))
         judgement = self.judge.judge_turn(session, transcript)
         session.lang = judgement.reply_lang or session.lang
-
-        if judgement.off_topic:
-            text = _say(session, "off_topic") + " " + session.last_question
-            return self._reply(session, "off_topic", text)
-
         asked = session.point(session.current_id)
+
+        if judgement.off_topic and not gave_up:
+            written = judgement.reply if judgement.move == "off_topic" else ""
+            text = written or _join(_say(session, "off_topic"), session.last_question)
+            return self._reply(session, "off_topic", text, judgement)
+
         self._record(session, judgement)
 
-        if session.phase == "explain":
-            session.phase = "follow_up"
-            return self._next_gap(session, judgement, lead="")
+        # The learner asked us something instead of answering. Answer it; no
+        # hint is used up. Allowed a couple of times per point.
+        if (
+            judgement.learner_asked
+            and not gave_up
+            and asked is not None
+            and not asked.closed
+            and asked.clarifies < MAX_CLARIFIES
+        ):
+            asked.clarifies += 1
+            written = judgement.reply if judgement.move == "clarify" else ""
+            text = written or _join(_say(session, "say_more"), session.last_question)
+            return self._reply(session, "follow_up", text, judgement)
 
-        if asked is None or asked.closed:
-            # The point just asked about is now covered.
-            return self._next_gap(session, judgement, lead=_say(session, "correct"))
-        # Not covered: a miss and "I don't know" are treated the same way.
-        return self._stuck(session, asked)
+        # ----- which move do the rules allow? -----
+        if session.phase == "explain" or asked is None or asked.closed:
+            first = session.phase == "explain"
+            session.phase = "follow_up"
+            gap = self._pick_gap(session)
+            move = "ask" if gap else "done"
+            lead = "" if first else _say(session, "correct")
+            if not gap:
+                return self._finish(session, lead, self._written(judgement, move, None), judgement)
+            return self._ask(session, gap, lead, self._written(judgement, move, gap), judgement)
+
+        if len(asked.hints) < MAX_HINTS:
+            move = "hint1" if not asked.hints else "hint2"
+            return self._hint(session, asked, self._written(judgement, move, asked), judgement)
+
+        # Both hints are used: explain this point and move on.
+        if not asked.explanation:
+            self._support(session, asked)
+        asked.result = AMBER
+        asked.last_status = "explained by the tutor"
+        gap = self._pick_gap(session)
+        written = self._written(judgement, "explain", gap)
+        lead = _join(_say(session, "explain_lead"), judgement.explanation or asked.explanation)
+        if not gap:
+            return self._finish(session, lead, written, judgement)
+        reply = self._ask(session, gap, lead, written, judgement)
+        reply["action"] = "app_explains"
+        return reply
 
     def _setup_turn(self, session: Session, transcript: str) -> dict:
         """Turns before the explanation: a new topic, a level, or a yes/no."""
@@ -169,12 +208,6 @@ class Tutor:
 
     def _record(self, session: Session, judgement: Judgement) -> None:
         """Writes the judge's verdicts onto the key points."""
-        # The judge writes a fresh hint that answers what the learner just
-        # said, in the language they are speaking now.
-        gap = session.point(judgement.first_gap_id)
-        if gap is not None and not gap.closed:
-            gap.fresh_hint = judgement.hint or gap.fresh_hint
-            gap.explanation = judgement.explanation or gap.explanation
         for point in session.points:
             status = judgement.statuses.get(point.id)
             if status is None:
@@ -198,53 +231,47 @@ class Tutor:
         wrong = [p for p in open_points if p.last_status == "wrong"]
         return (wrong or open_points or [None])[0]
 
-    def _next_gap(self, session: Session, judgement: Judgement | None, lead: str) -> dict:
-        """Moves to the next open point, or finishes."""
-        gap = self._pick_gap(session)
-        if gap is None:
-            return self._finish(session, lead)
+    def _written(self, judgement: Judgement, move: str, about: KeyPoint | None) -> str:
+        """The model's own reply, but only if it made the move the rules allow
+        and is talking about the right point. Otherwise an empty string."""
+        same_point = judgement.about_id == (about.id if about else None)
+        if judgement.move == move and same_point:
+            return judgement.reply
+        return ""
+
+    def _ask(
+        self, session: Session, gap: KeyPoint, lead: str, written: str, judgement: Judgement
+    ) -> dict:
+        """Asks about the next open point."""
         session.current_id = gap.id
-        # Use the judge's question when it is about the same point. Otherwise
-        # use the ready question that was written with the key points.
-        question = ""
-        if judgement and judgement.first_gap_id == gap.id:
-            question = judgement.follow_up.strip()
-        if not question:
-            self._support(session, gap)
-        session.last_question = question or gap.question or _say(session, "say_more")
-        return self._reply(session, "follow_up", _join(lead, session.last_question))
+        if written:
+            session.last_question = judgement.question or written
+            return self._reply(session, "follow_up", written, judgement)
+        self._support(session, gap)
+        session.last_question = gap.question or _say(session, "say_more")
+        return self._reply(session, "follow_up", _join(lead, session.last_question), judgement)
 
-    def _stuck(self, session: Session, point: KeyPoint | None) -> dict:
-        """The learner missed the point, said "I don't know", stayed silent or
-        tapped the give-up button. Nudge them and give the next hint. Only
-        when the hints are used up does the app explain."""
-        if point is None:
-            return self._next_gap(session, None, "")
-        if len(point.hints) >= MAX_HINTS:
-            return self._app_explains(session, point)
-        if not point.fresh_hint:
-            self._support(session, point)
-        hint = _next_hint(point)
-        if not hint:
-            return self._app_explains(session, point)
-        nudge = _say(session, "nudge_first" if not point.hints else "nudge_again")
-        point.hints.append(hint)
-        point.fresh_hint = ""
-        text = _join(nudge, _say(session, "hint_prefix"), hint, session.last_question)
-        return self._reply(session, "hint", text)
-
-    def _app_explains(self, session: Session, point: KeyPoint) -> dict:
-        """The app explains the point in two sentences and moves on.
-        This is never counted as the learner's knowledge."""
-        if not point.explanation:
-            self._support(session, point)
-        point.result = AMBER
-        point.last_status = "explained by the tutor"
-        lead = _join(_say(session, "explain_lead"), point.explanation)
-        reply = self._next_gap(session, None, lead=lead)
-        if reply["action"] == "follow_up":
-            reply["action"] = "app_explains"
-        return reply
+    def _hint(
+        self, session: Session, point: KeyPoint, written: str, judgement: Judgement
+    ) -> dict:
+        """A nudge to try once more, with the next hint. The learner may give
+        up, but only after both hints does the app explain."""
+        first = not point.hints
+        if written and judgement.hint and judgement.hint not in point.hints:
+            point.hints.append(judgement.hint)
+            session.last_question = judgement.question or session.last_question
+            return self._reply(session, "hint", written, judgement)
+        # Ready phrases, if the model's reply cannot be used.
+        self._support(session, point)
+        hint = next(
+            (h for h in ([point.hint, point.hint2] if first else [point.hint2, point.hint])
+             if h and h not in point.hints),
+            "",
+        )
+        point.hints.append(hint or "-")
+        nudge = _say(session, "nudge_first" if first else "nudge_again")
+        text = _join(nudge, hint, session.last_question)
+        return self._reply(session, "hint", text, judgement)
 
     def _support(self, session: Session, point: KeyPoint) -> None:
         """Makes sure the point has a question, hints and an explanation in the
@@ -262,34 +289,36 @@ class Tutor:
             return self._reply(session, "show_text_box", text)
         return self._reply(session, "retry_audio", text)
 
-    def _finish(self, session: Session, lead: str) -> dict:
+    def _finish(
+        self, session: Session, lead: str, written: str = "", judgement: Judgement | None = None
+    ) -> dict:
         session.phase = "summary"
         session.current_id = None
         all_green = all(p.result == GREEN for p in session.points)
         closing = _say(session, "done" if all_green else "done_with_help")
-        reply = self._reply(session, "done", _join(lead, closing))
+        reply = self._reply(session, "done", written or _join(lead, closing), judgement)
         reply["summary"] = session.summary()
         return reply
 
-    def _reply(self, session: Session, action: str, text: str) -> dict:
+    def _reply(
+        self, session: Session, action: str, text: str, judgement: Judgement | None = None
+    ) -> dict:
         session.history.append(("tutor", text))
+        # Notes for the developer's viewer. Kept in memory only, like the session.
+        session.notes.append({
+            "action": action,
+            "text": text,
+            "model_move": judgement.move if judgement else "",
+            "used_model_reply": bool(judgement and judgement.reply and text == judgement.reply),
+            "meaning": judgement.meaning if judgement else "",
+            "statuses": dict(judgement.statuses) if judgement else {},
+        })
         return {
             "action": action,
             "text": text,
             "lang": session.lang,
             "progress": session.progress(),
         }
-
-
-def _next_hint(point: KeyPoint) -> str:
-    """The next hint for this point that has not been given yet. The judge's
-    fresh hint comes first. The ready ones are the backup: the gentle one
-    first, the stronger one second."""
-    ready = [point.hint, point.hint2] if not point.hints else [point.hint2, point.hint]
-    for hint in [point.fresh_hint, *ready]:
-        if hint and hint not in point.hints:
-            return hint
-    return ""
 
 
 def _join(*parts: str) -> str:

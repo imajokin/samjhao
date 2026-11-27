@@ -60,5 +60,11 @@ class SessionStore:
             del self._sessions[key]
             self._before.pop(key, None)
 
+    def recent(self, limit: int = 10) -> list[Session]:
+        """The most recently used sessions, newest first. For the developer's viewer."""
+        with self._lock:
+            ordered = sorted(self._sessions.values(), key=lambda entry: entry[0], reverse=True)
+            return [session for _, session in ordered[:limit]]
+
     def __len__(self) -> int:
         return len(self._sessions)

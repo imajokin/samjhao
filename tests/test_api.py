@@ -37,12 +37,16 @@ class FakeJudge:
 
     def judge_turn(self, session, transcript):
         if "everything" in transcript:
-            return Judgement({1: "covered", 2: "covered"})
-        return Judgement({1: "covered", 2: "missing"}, first_gap_id=2, follow_up="How long?")
+            return Judgement({1: "covered", 2: "covered"}, move="done", reply="All clear.")
+        if session.current_id == 2:
+            return Judgement({1: "covered", 2: "missing"}, move="hint1", about_id=2,
+                             reply="Think of a clock.", hint="Think of a clock.")
+        return Judgement({1: "covered", 2: "missing"}, move="ask", about_id=2,
+                         reply="How long?", question="How long?")
 
 
 def client(judge=None, **env) -> TestClient:
-    settings_env = {"OPENROUTER_API_KEY": "test-value", "SARVAM_API_KEY": "", **env}
+    settings_env = {"OPENROUTER_API_KEY": "test-value", "SARVAM_API_KEY": "", "DEV_VIEWER": "", **env}
     with mock.patch.dict(os.environ, settings_env, clear=False):
         return TestClient(create_app(load_settings(), judge=judge or FakeJudge()))
 
@@ -124,6 +128,22 @@ class SessionRoutes(unittest.TestCase):
         self.assertEqual(api.post("/api/session/start", json=body).status_code, 200)
         reply = api.post("/api/session/start", json=body)
         self.assertEqual(reply.json()["error"], "daily_cap")
+
+
+class DeveloperViewer(unittest.TestCase):
+    def test_viewer_is_off_unless_switched_on(self):
+        self.assertEqual(client().get("/dev/sessions").status_code, 404)
+
+    def test_viewer_shows_the_conversation_when_switched_on(self):
+        api = client(DEV_VIEWER="on")
+        sid = api.post("/api/session/start", json={"topic_text": "Day and night, Class 8"}).json()["session_id"]
+        api.post(f"/api/session/{sid}/turn", json={"transcript": LONG})
+        page = api.get("/dev/sessions")
+        self.assertEqual(page.status_code, 200)
+        self.assertIn(LONG, page.text)
+        self.assertIn("How long?", page.text)
+        data = api.get("/dev/sessions.json").json()
+        self.assertEqual(data[0]["history"][-1], ["tutor", "How long?"])
 
 
 class StoreAndLimiter(unittest.TestCase):

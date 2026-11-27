@@ -189,6 +189,7 @@ def run_regular(key: str, model: str, sample: dict) -> dict:
             key_points=prompts.format_key_points(points),
             conversation="(nothing yet; this is the learner's first explanation)",
             asked_about="none; this is the first explanation",
+            hints_given="none yet",
             transcript=sample["said"],
             language_rules=prompts.LANGUAGE_RULES,
         ),
@@ -233,9 +234,9 @@ def print_report(results: list[dict]) -> None:
                 print(f"  [{judged.get('status', '?'):>7}] {point['statement']}")
                 if judged.get("status") == "covered":
                     print(f"            evidence: {judged.get('evidence')}")
-            print(f"  First gap: point {judgement.get('first_gap_id')}")
-            print(f"  Question:  {judgement.get('follow_up')}")
-            gap = next((p for p in result["key_points"] if p["id"] == judgement.get("first_gap_id")), None)
+            print(f"  Move: {judgement.get('move')} | about point {judgement.get('about_point_id')}")
+            print(f"  Question:  {judgement.get('reply')}")
+            gap = next((p for p in result["key_points"] if p["id"] == judgement.get("about_point_id")), None)
             print(f"  Hint:      {judgement.get('hint')}")
             print(
                 f"  Time: setup {result['setup_seconds']}s, turn {result['turn_seconds']}s"

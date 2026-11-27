@@ -41,7 +41,7 @@ class LLMJudge:
             has_explanation=bool(answer.get("has_explanation")),
             narrow_subject=str(answer.get("narrow_subject", "")).strip(),
             nearby_topic=str(answer.get("nearby_topic", "")).strip(),
-            key_points=points[:5],
+            key_points=points[:4],
         )
 
     def judge_turn(self, session: Session, transcript: str) -> Judgement:
@@ -84,18 +84,22 @@ class LLMJudge:
                     statuses[int(item["id"])] = item["status"]
                 except (KeyError, TypeError, ValueError):
                     continue
-        gap = answer.get("first_gap_id")
+        about = answer.get("about_point_id")
         unclear = answer.get("unclear_word")
         return Judgement(
             statuses=statuses,
-            first_gap_id=gap if isinstance(gap, int) else None,
             dont_know=bool(answer.get("dont_know")),
             off_topic=bool(answer.get("off_topic")),
+            learner_asked=bool(answer.get("learner_asked")),
             reply_lang=str(answer.get("reply_lang") or session.lang),
             unclear_word=unclear if isinstance(unclear, dict) else None,
-            follow_up=str(answer.get("follow_up") or "").strip(),
+            move=str(answer.get("move") or ""),
+            about_id=about if isinstance(about, int) else None,
+            reply=str(answer.get("reply") or "").strip(),
+            question=str(answer.get("question") or "").strip(),
             hint=str(answer.get("hint") or "").strip(),
             explanation=str(answer.get("explanation") or "").strip(),
+            meaning=str(answer.get("learner_meaning") or "").strip(),
         )
 
     def write_support(self, session: Session, point: KeyPoint) -> None:

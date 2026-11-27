@@ -35,12 +35,16 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | The class is chosen on the home screen (6 to 12, College, Other) before the mic can be used. Samjhao no longer asks "which class" in the conversation. | Shubham tried the app on 27 Nov: the class question wasted a turn. |
 | 27 Nov 2026 | The learner says the topic and explains it in one go. If the first words already contain an explanation, it is judged at once. The "explain it like I am your younger brother" turn is removed; a topic with no explanation gets one short line asking for it. Changes HANDOVER.md 6.1 and 6.5. | Shubham: he had already explained at the top and was asked two more questions before any judging. |
 | 27 Nov 2026 | The waiting line says what Samjhao is doing, in the learner's language: writing down what was said, going through the topic, thinking of a question, or thinking of a hint. It replaces the bare "सोच रहा हूँ…". | Shubham: the learner should always be able to tell what is happening. |
+| 27 Nov 2026 | The model now writes each whole reply as natural speech: a reaction to what the learner said, then the question, hint or explanation in fresh words. Our code still decides which move is allowed (ask, first hint, stronger hint, explain, finish) and uses the model's reply only if it made that move. The fixed phrases remain as the backup. | Shubham on 27 Nov: the tutor sounded strict and parroted the same sentences. In the first test sessions the model's reply followed the rules in 33 of 33 turns. |
+| 27 Nov 2026 | A learner who asks Samjhao something instead of answering gets an answer, and no hint is used up (twice per point at most). | Part of making it feel like a normal conversation with a teacher. |
+| 27 Nov 2026 | Key points are limited to three or four essentials per topic. | Less strict: fewer things to be questioned on. |
+| 27 Nov 2026 | A developer's viewer at /dev/sessions shows the conversations currently in memory. It exists only when DEV_VIEWER=on, which is set on Shubham's laptop and must never be set on the public link. Nothing is written to disk. | Shubham asked for it so Claude can see what went wrong in a session he tried. |
 
 ## Open (waiting for Shubham)
 
+- Thinking level for the judge: full thinking now takes 10 to 17 s per turn with the longer replies; the lightest level takes 4 to 5 s and followed the rules in 10 of 10 turns. Shubham chose full thinking earlier; ask again with these numbers.
 - How the live link is set up on 14061406.xyz (which machine runs the container).
 - Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).
-- Topics to decline, session limits, people and proof: asked as each part comes up.
 
 ## Checked against live documentation (27 Nov 2026)
 
@@ -52,5 +56,6 @@ These replace the unverified notes in HANDOVER.md section 4.4.
 - Sarvam transcript modes: `transcribe`, `verbatim`, `translit`, `codemix`, `translate`. Language can be detected automatically; 23 Indian languages are listed.
 - Sarvam text-to-speech: `POST https://api.sarvam.ai/text-to-speech`, models `bulbul:v4-flash` and `bulbul:v3`, up to 2,500 characters, handles Hindi mixed with English.
 - Sarvam price: about ₹0.49 per minute of listening, ₹2 to ₹3 per 1,000 characters spoken, ₹100 free credit on sign-up.
+- Claude Sonnet 5.5 does not allow its thinking step to be switched off through OpenRouter; the lightest setting is `reasoning: {effort: low}`.
 - OpenRouter: `POST https://openrouter.ai/api/v1/chat/completions`. A spending limit can be set on each key in the key's settings ("Key limit"), with an optional daily reset.
 - Jev on OpenRouter: `POST https://openrouter.ai/api/alpha/decisions`, model `typesafe/jev-1.14`. It answers yes/no, choice and score questions with probabilities. It is marked alpha, so its format may change. About $0.042 per million tokens in.

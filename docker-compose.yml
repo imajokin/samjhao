@@ -25,6 +25,7 @@ services:
       SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-30}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-30}
       DAILY_REQUEST_CAP: ${DAILY_REQUEST_CAP:-2000}
+      DEV_VIEWER: ${DEV_VIEWER:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
       interval: 10s

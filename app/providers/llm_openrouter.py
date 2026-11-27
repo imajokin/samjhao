@@ -32,8 +32,9 @@ class OpenRouter:
             },
         }
         if not self.settings.llm_thinking:
-            # The model thinks before answering unless told not to.
-            body["reasoning"] = {"enabled": False}
+            # The model thinks before answering. Some models do not allow
+            # thinking to be switched off, so "off" asks for the lightest level.
+            body["reasoning"] = {"effort": "low"}
         headers = {
             "Authorization": "Bearer " + self.settings.openrouter_api_key,
             "X-OpenRouter-Title": "Samjhao",

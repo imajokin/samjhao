@@ -60,6 +60,7 @@ class Settings:
     session_ttl_minutes: int
     rate_limit_per_minute: int
     daily_request_cap: int
+    dev_viewer: bool
 
     @property
     def judging(self) -> bool:
@@ -118,4 +119,7 @@ def load_settings() -> Settings:
         session_ttl_minutes=_number("SESSION_TTL_MINUTES", 30),
         rate_limit_per_minute=_number("RATE_LIMIT_PER_MINUTE", 30),
         daily_request_cap=_number("DAILY_REQUEST_CAP", 2000),
+        # A page that shows the current conversations, for the developer only.
+        # Off unless switched on. Never switch it on for the public link.
+        dev_viewer=_text("DEV_VIEWER").lower() == "on",
     )

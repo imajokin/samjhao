@@ -9,7 +9,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import JSONResponse, Response
+from html import escape
+
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -169,6 +171,55 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
         except ServiceDown as problem:
             return service_down(problem, body.lang, body.voice)
         return Response(content=audio, media_type="audio/mpeg")
+
+    if settings.dev_viewer:
+        # For the developer only, and only when DEV_VIEWER=on. Shows the
+        # conversations that are in memory right now. Nothing is written to disk.
+        def session_view(session) -> dict:
+            return {
+                "id": session.id,
+                "topic": session.topic or session.topic_text,
+                "level": session.level,
+                "lang": session.lang,
+                "phase": session.phase,
+                "asking_about": session.current_id,
+                "points": [
+                    {"id": p.id, "statement": p.statement, "status": p.last_status,
+                     "result": p.result, "hints": p.hints}
+                    for p in session.points
+                ],
+                "history": [list(line) for line in session.history],
+                "notes": session.notes,
+            }
+
+        @app.get("/dev/sessions.json")
+        def dev_sessions_json():
+            return [session_view(s) for s in sessions.recent()]
+
+        @app.get("/dev/sessions", response_class=HTMLResponse)
+        def dev_sessions():
+            parts = ["<!doctype html><meta charset='utf-8'><title>Samjhao viewer</title>",
+                     "<body style='font:16px/1.5 system-ui;max-width:820px;margin:20px auto;padding:0 12px'>",
+                     "<h1>Samjhao: conversations in memory</h1>",
+                     "<p>Developer view. Newest first. Refresh to update.</p>"]
+            for view in map(session_view, sessions.recent()):
+                parts.append(f"<hr><h2>{escape(view['topic'])} ({escape(view['level'])}, "
+                             f"{escape(view['lang'])}, {escape(view['phase'])})</h2><ol>")
+                for point in view["points"]:
+                    parts.append(f"<li>{escape(point['statement'])} <b>[{escape(str(point['status']))}"
+                                 f" / {escape(str(point['result']))}]</b> hints: {len(point['hints'])}</li>")
+                parts.append("</ol>")
+                notes = iter(view["notes"])
+                for who, text in view["history"]:
+                    colour = "#0b3d91" if who == "tutor" else "#1b1b1f"
+                    extra = ""
+                    if who == "tutor":
+                        note = next(notes, {})
+                        extra = (f" <small style='color:#666'>[{escape(str(note.get('action')))}; model move "
+                                 f"{escape(str(note.get('model_move')))}; model reply used: "
+                                 f"{note.get('used_model_reply')}]</small>")
+                    parts.append(f"<p style='color:{colour}'><b>{escape(who)}:</b> {escape(text)}{extra}</p>")
+            return "".join(parts)
 
     # The web page. Mounted last so the routes above win.
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

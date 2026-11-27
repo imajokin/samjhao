@@ -34,8 +34,8 @@ MODELS = [
 ]
 RUNS = int(os.environ.get("RUNS", "1"))
 # Whether the model "thinks" before answering. Off is about twice as fast.
-THINK_SETUP = os.environ.get("THINK_SETUP", "off") == "on"
-THINK_TURN = os.environ.get("THINK_TURN", "off") == "on"
+THINK_SETUP = os.environ.get("THINK_SETUP", "on") == "on"
+THINK_TURN = os.environ.get("THINK_TURN", "on") == "on"
 
 SAMPLES = [
     {
@@ -80,7 +80,24 @@ SAMPLES = [
         "said": "Earth apni axis par ghoomti hai, ek poora chakkar lagbhag 24 ghante mein hota hai. Sooraj ki roshni ek time par sirf aadhi Earth par padti hai, jo hissa sooraj ke saamne hai wahan din hota hai aur doosri taraf raat. Jaise jaise Earth ghoomti hai, hamari jagah dheere dheere roshni mein aati hai toh din ho jaata hai, aur phir ghoom kar roshni se bahar chali jaati hai toh raat ho jaati hai.",
         "must_catch": "NOTHING. This one is fully correct and must be approved with no invented gap.",
     },
+    {
+        "id": 7,
+        "topic": "Why we have day and night",
+        "level": "Class 8",
+        "said": "Sooraj Earth ke chaaron taraf ghoomta hai isliye din aur raat hote hain, jahan sooraj hota hai wahan din.",
+        "must_catch": "The sun does not go around the Earth. The Earth's own spin is missing and must NOT be credited.",
+    },
+    {
+        "id": 8,
+        "topic": "Why we have day and night",
+        "level": "Class 8",
+        "said": "सूरज Earth के चारों तरफ़ घूमता है इसलिए दिन और रात होते हैं, जहाँ सूरज होता है वहाँ दिन।",
+        "must_catch": "Same as sample 7, written in Hindi script as the speech service would write it.",
+    },
 ]
+# To run only some samples: ONLY=7 or ONLY=1,4
+if os.environ.get("ONLY"):
+    SAMPLES = [s for s in SAMPLES if str(s["id"]) in os.environ["ONLY"].split(",")]
 
 
 def read_key() -> str:
@@ -157,6 +174,7 @@ def key_points_prompt(sample: dict) -> str:
         level=sample["level"],
         language="Hindi mixed with English",
         confirmed="yes",
+        language_rules=prompts.LANGUAGE_RULES,
     )
 
 
@@ -174,6 +192,7 @@ def run_regular(key: str, model: str, sample: dict) -> dict:
             conversation="(nothing yet; this is the learner's first explanation)",
             asked_about="none; this is the first explanation",
             transcript=sample["said"],
+            language_rules=prompts.LANGUAGE_RULES,
         ),
         prompts.JUDGE_SCHEMA,
         "judgement",
@@ -214,6 +233,8 @@ def print_report(results: list[dict]) -> None:
             for point in result["key_points"]:
                 judged = status_by_id.get(point["id"], {})
                 print(f"  [{judged.get('status', '?'):>7}] {point['statement']}")
+                if judged.get("status") == "covered":
+                    print(f"            evidence: {judged.get('evidence')}")
             print(f"  First gap: point {judgement.get('first_gap_id')}")
             print(f"  Question:  {judgement.get('follow_up')}")
             gap = next((p for p in result["key_points"] if p["id"] == judgement.get("first_gap_id")), None)

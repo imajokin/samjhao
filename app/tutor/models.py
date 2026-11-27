@@ -52,6 +52,10 @@ class Judgement:
     reply_lang: str = "hinglish"
     unclear_word: dict | None = None
     follow_up: str = ""
+    # A hint and an explanation for the gap, in the language the learner is
+    # speaking now. They replace the ones written when the session started.
+    hint: str = ""
+    explanation: str = ""
 
 
 @dataclass
@@ -59,7 +63,8 @@ class Session:
     """One learner's conversation. Kept in memory only, then forgotten."""
 
     id: str
-    lang: str = "hinglish"
+    voice: str = "male"  # the tutor's voice: male or female
+    lang: str = "hinglish"  # hindi, hinglish, english, punjabi, telugu, kannada
     # topic -> level -> confirm -> explain -> follow_up -> summary
     phase: str = "topic"
     topic_text: str = ""  # what the learner said

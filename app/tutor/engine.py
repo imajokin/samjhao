@@ -11,7 +11,7 @@ That keeps the counting honest and makes loops impossible:
 
 import uuid
 
-from app.tutor.language import guess_language, is_no, is_yes, word_count
+from app.tutor.language import guess_language, is_no, is_yes, language_from_code, word_count
 from app.tutor.models import AMBER, GREEN, Judge, Judgement, KeyPoint, Session
 from app.tutor.strings import say
 
@@ -20,8 +20,13 @@ MAX_TRIES = 2
 NOT_HEARD_BEFORE_TEXT_BOX = 2
 
 
-def new_session() -> Session:
-    return Session(id=uuid.uuid4().hex)
+def new_session(voice: str = "male") -> Session:
+    return Session(id=uuid.uuid4().hex, voice="female" if voice == "female" else "male")
+
+
+def _say(session: Session, key: str, **values: str) -> str:
+    """A fixed phrase in this learner's language and the chosen voice."""
+    return say(key, session.lang, session.voice, **values)
 
 
 class Tutor:
@@ -30,14 +35,19 @@ class Tutor:
 
     # ----- starting: topic, level, confirmation -----
 
-    def start(self, session: Session, topic_text: str, level: str = "") -> dict:
+    def start(
+        self, session: Session, topic_text: str, level: str = "", language_code: str = ""
+    ) -> dict:
         """The learner has said a topic, and maybe a level."""
-        session.lang = guess_language(topic_text)
+        if language_code:
+            session.lang = language_from_code(language_code, topic_text)
+        else:
+            session.lang = guess_language(topic_text)
         session.topic_text = (topic_text or "").strip()
         session.level = (level or "").strip()
         if not session.topic_text:
             session.phase = "topic"
-            return self._reply(session, "retry_audio", say("not_heard", session.lang))
+            return self._reply(session, "retry_audio", _say(session, "not_heard"))
         return self._plan(session, confirmed=False)
 
     def _plan(self, session: Session, confirmed: bool) -> dict:
@@ -45,40 +55,39 @@ class Tutor:
         plan = self.judge.make_key_points(
             session.topic_text, session.level, session.lang, confirmed
         )
-        lang = session.lang
         if plan.level and not session.level:
             session.level = plan.level
         topic = plan.topic_clean or session.topic_text
 
         if plan.status == "confirm":
             session.phase, session.pending_topic = "confirm", topic
-            return self._reply(session, "confirm_topic", say("confirm_topic", lang, topic=topic))
+            return self._reply(session, "confirm_topic", _say(session, "confirm_topic", topic=topic))
         if plan.status == "too_broad":
             session.phase = "topic"
             subject = plan.narrow_subject or topic
-            return self._reply(session, "narrow_topic", say("narrow_topic", lang, subject=subject))
+            return self._reply(session, "narrow_topic", _say(session, "narrow_topic", subject=subject))
         if plan.status == "not_a_concept":
             session.phase = "topic"
-            return self._reply(session, "narrow_topic", say("home_open", lang))
+            return self._reply(session, "narrow_topic", _say(session, "home_open"))
         if plan.status == "need_level":
             session.phase, session.topic_text = "level", topic
-            return self._reply(session, "ask_level", say("ask_level", lang))
+            return self._reply(session, "ask_level", _say(session, "ask_level"))
         if plan.status == "unsure" or not plan.key_points:
             # Never guess the key points.
             if plan.nearby_topic:
                 session.phase, session.pending_topic = "confirm", plan.nearby_topic
                 return self._reply(
-                    session, "unsure_topic", say("unsure_topic", lang, nearby=plan.nearby_topic)
+                    session, "unsure_topic", _say(session, "unsure_topic", nearby=plan.nearby_topic)
                 )
             session.phase = "topic"
-            return self._reply(session, "narrow_topic", say("home_open", lang))
+            return self._reply(session, "narrow_topic", _say(session, "home_open"))
 
         session.topic = topic
         session.points = plan.key_points
         session.phase = "explain"
         session.current_id = None
         session.not_heard_count = 0
-        session.last_question = say("start_explain", lang)
+        session.last_question = _say(session, "start_explain")
         return self._reply(session, "start_explain", session.last_question)
 
     # ----- every later turn -----
@@ -115,7 +124,7 @@ class Tutor:
         session.lang = judgement.reply_lang or session.lang
 
         if judgement.off_topic:
-            text = say("off_topic", session.lang) + " " + session.last_question
+            text = _say(session, "off_topic") + " " + session.last_question
             return self._reply(session, "off_topic", text)
 
         asked = session.point(session.current_id)
@@ -127,7 +136,7 @@ class Tutor:
 
         if asked is None or asked.closed:
             # The point just asked about is now covered.
-            return self._next_gap(session, judgement, lead=say("correct", session.lang))
+            return self._next_gap(session, judgement, lead=_say(session, "correct"))
         if judgement.dont_know:
             return self._dont_know(session, asked, "")
         return self._missed(session, asked, judgement)
@@ -135,7 +144,7 @@ class Tutor:
     def _setup_turn(self, session: Session, transcript: str) -> dict:
         """Turns before the explanation: a new topic, a level, or a yes/no."""
         if not transcript:
-            return self._reply(session, "retry_audio", say("not_heard", session.lang))
+            return self._reply(session, "retry_audio", _say(session, "not_heard"))
         if session.phase == "level":
             session.level = transcript
             return self._plan(session, confirmed=False)
@@ -145,7 +154,7 @@ class Tutor:
                 return self._plan(session, confirmed=True)
             if is_no(transcript):
                 session.phase, session.level = "topic", ""
-                return self._reply(session, "narrow_topic", say("home_open", session.lang))
+                return self._reply(session, "narrow_topic", _say(session, "home_open"))
             # Neither yes nor no: treat what they said as the topic itself.
         return self.start(session, transcript, session.level if session.phase == "confirm" else "")
 
@@ -153,6 +162,11 @@ class Tutor:
 
     def _record(self, session: Session, judgement: Judgement) -> None:
         """Writes the judge's verdicts onto the key points."""
+        # Keep the hint and explanation in the language the learner speaks now.
+        gap = session.point(judgement.first_gap_id)
+        if gap is not None and not gap.closed:
+            gap.hint = judgement.hint or gap.hint
+            gap.explanation = judgement.explanation or gap.explanation
         for point in session.points:
             status = judgement.statuses.get(point.id)
             if status is None:
@@ -187,7 +201,7 @@ class Tutor:
         question = ""
         if judgement and judgement.first_gap_id == gap.id:
             question = judgement.follow_up.strip()
-        session.last_question = question or gap.question or say("say_more", session.lang)
+        session.last_question = question or gap.question or _say(session, "say_more")
         return self._reply(session, "follow_up", _join(lead, session.last_question))
 
     def _dont_know(self, session: Session, point: KeyPoint | None, lead: str) -> dict:
@@ -206,12 +220,12 @@ class Tutor:
         if point.tries >= MAX_TRIES:
             return self._app_explains(session, point)
         # The hint came from "pata nahi", so one real try is still left.
-        text = _join(say("say_more", session.lang), session.last_question)
+        text = _join(_say(session, "say_more"), session.last_question)
         return self._reply(session, "follow_up", text)
 
     def _give_hint(self, session: Session, point: KeyPoint) -> dict:
         point.hint_given = True
-        text = _join(say("hint_prefix", session.lang), point.hint, session.last_question)
+        text = _join(_say(session, "hint_prefix"), point.hint, session.last_question)
         return self._reply(session, "hint", text)
 
     def _app_explains(self, session: Session, point: KeyPoint) -> dict:
@@ -227,7 +241,7 @@ class Tutor:
     def _not_heard(self, session: Session) -> dict:
         """Nothing usable was heard. Earlier progress is kept."""
         session.not_heard_count += 1
-        text = say("not_heard", session.lang)
+        text = _say(session, "not_heard")
         if session.not_heard_count >= NOT_HEARD_BEFORE_TEXT_BOX:
             return self._reply(session, "show_text_box", text)
         return self._reply(session, "retry_audio", text)
@@ -236,7 +250,7 @@ class Tutor:
         session.phase = "summary"
         session.current_id = None
         all_green = all(p.result == GREEN for p in session.points)
-        closing = say("done" if all_green else "done_with_help", session.lang)
+        closing = _say(session, "done" if all_green else "done_with_help")
         reply = self._reply(session, "done", _join(lead, closing))
         reply["summary"] = session.summary()
         return reply

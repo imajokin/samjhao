@@ -1,65 +1,180 @@
-"""Every fixed phrase Samjhao says, in Hindi and English (HANDOVER.md 6.5).
+"""Every fixed phrase Samjhao says, in its five languages (HANDOVER.md 6.5).
 
-Hindi is in Devanagari with technical and everyday English words left in
-Latin letters, the way learners read them in textbooks.
+Each Indian language is written in its own script, with technical and
+everyday English words left in Latin letters, the way learners read them in
+textbooks. Where a phrase depends on whether Samjhao's voice is male or
+female, it is a pair: (male, female).
+
+The Punjabi, Telugu and Kannada phrases still need a check by a native speaker.
 """
 
+LANGUAGES = ("hindi", "english", "punjabi", "telugu", "kannada")
+
 STRINGS = {
-    "home_open": (
-        "आज क्या समझाओगे? Topic बोलो, और अपनी class बताओ।",
-        "What will you explain today? Say the topic and your class.",
-    ),
-    "ask_level": ("कौन सी class में हो?", "Which class are you in?"),
-    "narrow_topic": ("{subject} में कौन सा topic?", "Which topic in {subject}?"),
-    "confirm_topic": ("तुमने {topic} कहा?", "Did you say {topic}?"),
-    "start_explain": (
-        "मुझे यह ऐसे समझाओ जैसे मैं तुम्हारा छोटा भाई हूँ। Mic दबाओ और बोलो।",
-        "Explain this to me like I am your younger brother. Tap the mic and speak.",
-    ),
-    "correct": ("हाँ, बिल्कुल सही।", "Yes, exactly right."),
-    "say_more": ("यहाँ थोड़ा और बताओ।", "Tell me a little more here."),
-    "hint_prefix": ("एक छोटा hint:", "A small hint:"),
-    "done": (
-        "शाबाश, तुमने पूरा समझा दिया।",
-        "Well done, you explained all of it.",
-    ),
+    "home_open": {
+        "hindi": "आज क्या समझाओगे? Topic बोलो, और अपनी class बताओ।",
+        "english": "What will you explain today? Say the topic and your class.",
+        "punjabi": "ਅੱਜ ਕੀ ਸਮਝਾਓਗੇ? Topic ਬੋਲੋ, ਅਤੇ ਆਪਣੀ class ਦੱਸੋ।",
+        "telugu": "ఈ రోజు ఏం వివరిస్తావు? Topic చెప్పు, నీ class కూడా చెప్పు.",
+        "kannada": "ಇಂದು ಏನು ವಿವರಿಸುತ್ತೀಯ? Topic ಹೇಳು, ನಿನ್ನ class ಕೂಡ ಹೇಳು.",
+    },
+    "ask_level": {
+        "hindi": "कौन सी class में हो?",
+        "english": "Which class are you in?",
+        "punjabi": "ਕਿਹੜੀ class ਵਿੱਚ ਹੋ?",
+        "telugu": "నువ్వు ఏ class లో ఉన్నావు?",
+        "kannada": "ನೀನು ಯಾವ class ನಲ್ಲಿ ಇದ್ದೀಯ?",
+    },
+    "narrow_topic": {
+        "hindi": "{subject} में कौन सा topic?",
+        "english": "Which topic in {subject}?",
+        "punjabi": "{subject} ਵਿੱਚ ਕਿਹੜਾ topic?",
+        "telugu": "{subject} లో ఏ topic?",
+        "kannada": "{subject} ನಲ್ಲಿ ಯಾವ topic?",
+    },
+    "confirm_topic": {
+        "hindi": "तुमने {topic} कहा?",
+        "english": "Did you say {topic}?",
+        "punjabi": "ਤੁਸੀਂ {topic} ਕਿਹਾ?",
+        "telugu": "నువ్వు {topic} అన్నావా?",
+        "kannada": "ನೀನು {topic} ಅಂದೆಯಾ?",
+    },
+    "start_explain": {
+        "hindi": (
+            "मुझे यह ऐसे समझाओ जैसे मैं तुम्हारा छोटा भाई हूँ। Mic दबाओ और बोलो।",
+            "मुझे यह ऐसे समझाओ जैसे मैं तुम्हारी छोटी बहन हूँ। Mic दबाओ और बोलो।",
+        ),
+        "english": (
+            "Explain this to me like I am your younger brother. Tap the mic and speak.",
+            "Explain this to me like I am your younger sister. Tap the mic and speak.",
+        ),
+        "punjabi": (
+            "ਮੈਨੂੰ ਇਹ ਇਸ ਤਰ੍ਹਾਂ ਸਮਝਾਓ ਜਿਵੇਂ ਮੈਂ ਤੁਹਾਡਾ ਛੋਟਾ ਭਰਾ ਹਾਂ। Mic ਦਬਾਓ ਅਤੇ ਬੋਲੋ।",
+            "ਮੈਨੂੰ ਇਹ ਇਸ ਤਰ੍ਹਾਂ ਸਮਝਾਓ ਜਿਵੇਂ ਮੈਂ ਤੁਹਾਡੀ ਛੋਟੀ ਭੈਣ ਹਾਂ। Mic ਦਬਾਓ ਅਤੇ ਬੋਲੋ।",
+        ),
+        "telugu": (
+            "నేను నీ తమ్ముడిని అనుకుని నాకు ఇది వివరించు. Mic నొక్కి మాట్లాడు.",
+            "నేను నీ చెల్లెలిని అనుకుని నాకు ఇది వివరించు. Mic నొక్కి మాట్లాడు.",
+        ),
+        "kannada": (
+            "ನಾನು ನಿನ್ನ ತಮ್ಮ ಎಂದುಕೊಂಡು ನನಗೆ ಇದನ್ನು ವಿವರಿಸು. Mic ಒತ್ತಿ ಮಾತಾಡು.",
+            "ನಾನು ನಿನ್ನ ತಂಗಿ ಎಂದುಕೊಂಡು ನನಗೆ ಇದನ್ನು ವಿವರಿಸು. Mic ಒತ್ತಿ ಮಾತಾಡು.",
+        ),
+    },
+    "correct": {
+        "hindi": "हाँ, बिल्कुल सही।",
+        "english": "Yes, exactly right.",
+        "punjabi": "ਹਾਂ, ਬਿਲਕੁਲ ਸਹੀ।",
+        "telugu": "అవును, సరిగ్గా చెప్పావు.",
+        "kannada": "ಹೌದು, ಸರಿಯಾಗಿ ಹೇಳಿದೆ.",
+    },
+    "say_more": {
+        "hindi": "यहाँ थोड़ा और बताओ।",
+        "english": "Tell me a little more here.",
+        "punjabi": "ਇੱਥੇ ਥੋੜ੍ਹਾ ਹੋਰ ਦੱਸੋ।",
+        "telugu": "ఇక్కడ ఇంకొంచెం చెప్పు.",
+        "kannada": "ಇಲ್ಲಿ ಸ್ವಲ್ಪ ಇನ್ನೂ ಹೇಳು.",
+    },
+    "hint_prefix": {
+        "hindi": "एक छोटा hint:",
+        "english": "A small hint:",
+        "punjabi": "ਇੱਕ ਛੋਟਾ hint:",
+        "telugu": "ఒక చిన్న hint:",
+        "kannada": "ಒಂದು ಚಿಕ್ಕ hint:",
+    },
+    "done": {
+        "hindi": "शाबाश, तुमने पूरा समझा दिया।",
+        "english": "Well done, you explained all of it.",
+        "punjabi": "ਸ਼ਾਬਾਸ਼, ਤੁਸੀਂ ਪੂਰਾ ਸਮਝਾ ਦਿੱਤਾ।",
+        "telugu": "శభాష్, నువ్వు మొత్తం వివరించావు.",
+        "kannada": "ಶಭಾಷ್, ನೀನು ಪೂರ್ತಿ ವಿವರಿಸಿದೆ.",
+    },
     # Used at the end when a hint or an explanation was needed, so that the
     # app never claims the learner explained everything alone.
-    "done_with_help": (
-        "बढ़िया कोशिश। चलो देखते हैं कौन से points तुमने खुद समझाए।",
-        "Good effort. Let us see which points you explained on your own.",
-    ),
-    "not_heard": (
-        "आवाज़ साफ़ नहीं आई। Phone पास लाकर फिर से बोलो।",
-        "I could not hear clearly. Bring the phone closer and say it again.",
-    ),
-    "rerecord_button": ("गलत सुना? फिर से बोलो", "Heard it wrong? Say it again"),
-    "confirm_word": ("तुमने {a} कहा या {b}?", "Did you say {a} or {b}?"),
-    "off_topic": ("चलो वापस topic पर आते हैं।", "Let us come back to the topic."),
-    "unsure_topic": (
-        "इस topic पर मुझे पूरा भरोसा नहीं है। क्या हम {nearby} पर बात करें?",
-        "I am not fully sure about this topic. Shall we talk about {nearby}?",
-    ),
-    "thinking": ("सोच रहा हूँ…", "Thinking…"),
-    "new_topic_button": ("नया topic", "New topic"),
-    "keys_missing": (
-        "Keys set नहीं हैं, इसलिए Samjhao अभी सुन या जवाब नहीं दे सकता।",
-        "Keys are not set, so Samjhao cannot listen or reply yet. "
+    "done_with_help": {
+        "hindi": "बढ़िया कोशिश। चलो देखते हैं कौन से points तुमने खुद समझाए।",
+        "english": "Good effort. Let us see which points you explained on your own.",
+        "punjabi": "ਵਧੀਆ ਕੋਸ਼ਿਸ਼। ਆਓ ਵੇਖੀਏ ਕਿਹੜੇ points ਤੁਸੀਂ ਆਪ ਸਮਝਾਏ।",
+        "telugu": "మంచి ప్రయత్నం. నువ్వు సొంతంగా ఏ points వివరించావో చూద్దాం.",
+        "kannada": "ಒಳ್ಳೆಯ ಪ್ರಯತ್ನ. ನೀನೇ ಯಾವ points ವಿವರಿಸಿದೆ ಎಂದು ನೋಡೋಣ.",
+    },
+    "not_heard": {
+        "hindi": "आवाज़ साफ़ नहीं आई। Phone पास लाकर फिर से बोलो।",
+        "english": "I could not hear clearly. Bring the phone closer and say it again.",
+        "punjabi": "ਆਵਾਜ਼ ਸਾਫ਼ ਨਹੀਂ ਆਈ। Phone ਨੇੜੇ ਲਿਆ ਕੇ ਫਿਰ ਬੋਲੋ।",
+        "telugu": "మాట స్పష్టంగా వినిపించలేదు. Phone దగ్గరగా పెట్టి మళ్ళీ చెప్పు.",
+        "kannada": "ಧ್ವನಿ ಸ್ಪಷ್ಟವಾಗಿ ಕೇಳಿಸಲಿಲ್ಲ. Phone ಹತ್ತಿರ ಹಿಡಿದು ಮತ್ತೆ ಹೇಳು.",
+    },
+    "rerecord_button": {
+        "hindi": "गलत सुना? फिर से बोलो",
+        "english": "Heard it wrong? Say it again",
+        "punjabi": "ਗਲਤ ਸੁਣਿਆ? ਫਿਰ ਬੋਲੋ",
+        "telugu": "తప్పుగా విన్నానా? మళ్ళీ చెప్పు",
+        "kannada": "ತಪ್ಪಾಗಿ ಕೇಳಿಸಿತಾ? ಮತ್ತೆ ಹೇಳು",
+    },
+    "confirm_word": {
+        "hindi": "तुमने {a} कहा या {b}?",
+        "english": "Did you say {a} or {b}?",
+        "punjabi": "ਤੁਸੀਂ {a} ਕਿਹਾ ਜਾਂ {b}?",
+        "telugu": "నువ్వు {a} అన్నావా, {b} అన్నావా?",
+        "kannada": "ನೀನು {a} ಅಂದೆಯಾ ಅಥವಾ {b} ಅಂದೆಯಾ?",
+    },
+    "off_topic": {
+        "hindi": "चलो वापस topic पर आते हैं।",
+        "english": "Let us come back to the topic.",
+        "punjabi": "ਚਲੋ ਵਾਪਸ topic ਉੱਤੇ ਆਉਂਦੇ ਹਾਂ।",
+        "telugu": "మళ్ళీ topic కి వద్దాం.",
+        "kannada": "ಮತ್ತೆ topic ಗೆ ಬರೋಣ.",
+    },
+    "unsure_topic": {
+        "hindi": "इस topic पर मुझे पूरा भरोसा नहीं है। क्या हम {nearby} पर बात करें?",
+        "english": "I am not fully sure about this topic. Shall we talk about {nearby}?",
+        "punjabi": "ਇਸ topic ਬਾਰੇ ਮੈਨੂੰ ਪੂਰਾ ਭਰੋਸਾ ਨਹੀਂ ਹੈ। ਕੀ ਅਸੀਂ {nearby} ਬਾਰੇ ਗੱਲ ਕਰੀਏ?",
+        "telugu": "ఈ topic మీద నాకు పూర్తి నమ్మకం లేదు. మనం {nearby} గురించి మాట్లాడదామా?",
+        "kannada": "ಈ topic ಬಗ್ಗೆ ನನಗೆ ಪೂರ್ತಿ ಖಾತ್ರಿ ಇಲ್ಲ. ನಾವು {nearby} ಬಗ್ಗೆ ಮಾತಾಡೋಣವಾ?",
+    },
+    "thinking": {
+        "hindi": ("सोच रहा हूँ…", "सोच रही हूँ…"),
+        "english": "Thinking…",
+        "punjabi": ("ਸੋਚ ਰਿਹਾ ਹਾਂ…", "ਸੋਚ ਰਹੀ ਹਾਂ…"),
+        "telugu": "ఆలోచిస్తున్నాను…",
+        "kannada": "ಯೋಚಿಸುತ್ತಿದ್ದೇನೆ…",
+    },
+    "new_topic_button": {
+        "hindi": "नया topic",
+        "english": "New topic",
+        "punjabi": "ਨਵਾਂ topic",
+        "telugu": "కొత్త topic",
+        "kannada": "ಹೊಸ topic",
+    },
+    "keys_missing": {
+        "hindi": "Keys set नहीं हैं, इसलिए Samjhao अभी सुन या जवाब नहीं दे सकता।",
+        "english": "Keys are not set, so Samjhao cannot listen or reply yet. "
         "Try the live demo or watch the video.",
-    ),
-    "service_down": (
-        "अभी थोड़ी दिक्कत आ रही है। थोड़ी देर में फिर से कोशिश करो।",
-        "Something is not working right now. Please try again in a little while.",
-    ),
+    },
+    "service_down": {
+        "hindi": "अभी थोड़ी दिक्कत आ रही है। थोड़ी देर में फिर से कोशिश करो।",
+        "english": "Something is not working right now. Please try again in a little while.",
+        "punjabi": "ਹੁਣੇ ਥੋੜ੍ਹੀ ਦਿੱਕਤ ਆ ਰਹੀ ਹੈ। ਥੋੜ੍ਹੀ ਦੇਰ ਬਾਅਦ ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+        "telugu": "ఇప్పుడు కొంచెం ఇబ్బంది ఉంది. కాసేపు తర్వాత మళ్ళీ ప్రయత్నించు.",
+        "kannada": "ಈಗ ಸ್ವಲ್ಪ ತೊಂದರೆ ಆಗುತ್ತಿದೆ. ಸ್ವಲ್ಪ ಹೊತ್ತಿನ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸು.",
+    },
+    "daily_cap": {
+        "hindi": "आज की demo limit पूरी हो गई है। कल फिर आना, या video देख लो।",
+        "english": "Today's demo limit is used up. Please come back tomorrow, or watch the video.",
+    },
 }
 
 
-def say(key: str, lang: str = "hindi", **values: str) -> str:
-    """One fixed phrase in the learner's language.
+def say(key: str, lang: str = "hindi", voice: str = "male", **values: str) -> str:
+    """One fixed phrase in the learner's language and the tutor's voice.
 
-    `lang` is "hindi", "hinglish" or "english". Hinglish speakers get the
-    Hindi phrase, which already keeps English words in English.
+    `lang` is one of LANGUAGES, or "hinglish". Hinglish speakers get the
+    Hindi phrase, which already keeps English words in English. A language
+    with no phrase falls back to Hindi.
     """
-    hindi, english = STRINGS[key]
-    text = english if lang == "english" else hindi
+    phrases = STRINGS[key]
+    text = phrases.get(lang) or phrases["hindi"]
+    if isinstance(text, tuple):
+        text = text[1] if voice == "female" else text[0]
     return text.format(**values) if values else text

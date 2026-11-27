@@ -208,6 +208,17 @@ class GapOrder(unittest.TestCase):
         self.assertNotIn("Half the moon", str(reply))
 
 
+class HintLanguage(unittest.TestCase):
+    def test_hint_from_the_latest_turn_replaces_the_starting_one(self):
+        first = verdict(covered=(1, 2), gap=3, follow_up="Q?")
+        first.hint, first.explanation = "नया hint.", "नई explanation."
+        tutor, session = started([first, verdict(covered=(1, 2), gap=3, dont_know=True)])
+        tutor.turn(session, LONG)
+        reply = tutor.turn(session, "pata nahi")
+        self.assertIn("नया hint.", reply["text"])
+        self.assertNotIn("H3.", reply["text"])
+
+
 class HearingProblems(unittest.TestCase):
     def test_short_first_explanation_counts_as_not_heard(self):
         tutor, session = started([])

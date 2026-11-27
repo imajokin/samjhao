@@ -5,6 +5,11 @@ Call B judges one learner turn and writes the follow-up question.
 The engine, not the model, decides what happens next.
 """
 
+LANGUAGE_RULES = """Samjhao works in Hindi, English, Punjabi, Telugu and Kannada. Learners often mix their language with English.
+- Write every word of an Indian language in that language's own script (Devanagari for Hindi, Gurmukhi for Punjabi, Telugu script for Telugu, Kannada script for Kannada), never in Latin letters, even if the transcript is in Latin letters.
+- Keep English and technical words in Latin letters, as textbooks do (write "discharge", not "डिस्चार्ज").
+- Speak like a friendly older sibling, using the informal "you" of that language (in Hindi "तुम", not "आप")."""
+
 KEY_POINTS_PROMPT = """You are preparing a hidden checklist for a tutor that listens to a learner explain a concept aloud.
 What the learner said they will explain (from speech, so spelling may be rough): {topic}
 Level they gave separately: {level}
@@ -36,7 +41,8 @@ For each key point give:
 - hint: one short sentence in the learner's language that points the learner where to look. It must not state the idea or the answer.
 - explanation: two short sentences in the learner's language that state the idea plainly.
 
-Language rules for question, hint and explanation: speak like a friendly older sibling, use "तुम". Write every Hindi word in Devanagari, never in Latin letters. Keep English and technical words in Latin letters, as textbooks do (write "discharge", not "डिस्चार्ज").
+Language rules for question, hint and explanation:
+{language_rules}
 If the status is not "ok", return an empty key_points list.
 Return JSON only."""
 
@@ -101,11 +107,15 @@ The key point the tutor just asked about: {asked_about}
 The learner's latest words (a speech transcript, so spelling may be rough):
 \"\"\"{transcript}\"\"\"
 
+First fill learner_meaning: a faithful English translation of the learner's latest words. Keep exactly who or what does each action ("the Sun goes around the Earth" is not "the Earth turns"). Do not correct their mistakes and do not add anything. Judge from this meaning.
+
 For each key point, decide: "covered", "missing" or "wrong".
 Rules:
 - Judge by meaning, not wording. Accept any pronunciation, spelling or transliteration of a term, and its Hindi name.
 - Be lenient about grammar and fluency. Be strict about facts: a wrong statement must be marked "wrong", never "covered".
-- Mark "covered" only if you can quote the learner's words as evidence. Put that quote in evidence. For "missing", evidence is an empty string. For "wrong", quote the wrong words.
+- Mark "covered" only if you can quote the learner's words as evidence. Put that quote in evidence. The quote must be a whole clause with its subject, and that clause must say the same thing as the key point about the same subject.
+- If the learner states the usual wrong idea listed for a point, that point is "wrong", even if some of the same words appear.
+- When the question refers to what the learner said, repeat it faithfully. Never put words in their mouth. For "missing", evidence is an empty string. For "wrong", quote the wrong words.
 - "wrong" means the learner said something that contradicts the point. If they simply did not mention it, it is "missing".
 - Do not ask for more detail than the key point states. If the learner said the idea, it is covered.
 - If the learner's explanation is complete and correct, mark every point covered. Never invent a gap.
@@ -125,25 +135,32 @@ Write ONE follow-up question about that point only. If every point is covered or
 - Under 20 words.
 - It must not reveal the answer or name the missing idea. Never offer the answer as one of two options ("X या Y?").
 - If the point is "wrong", point at what the learner said, so they can rethink it.
-- Use the language the learner used most in their latest words. Write every Hindi word in Devanagari, never in Latin letters, even if the transcript is in Latin letters. Keep English and technical words in Latin letters (write "thunder", not "थंडर").
+- Use the language the learner used most in their latest words. Language rules:
+{language_rules}
 - No praise before the question.
 Examples for the point "Action and reaction act on two different bodies" when the learner said the forces cancel:
   Bad (gives options): "ये forces एक ही body पर लगते हैं या अलग-अलग bodies पर?"
   Bad (reveals): "ये forces किन दो अलग-अलग bodies पर लगते हैं?"
   Bad (two questions): "ये forces कहाँ लगते हैं, और cancel क्यों नहीं होते?"
   Good: "तुमने कहा दोनों forces cancel हो जाते हैं। ये forces किस पर लगते हैं?"
-- Warm tone, like a friendly older sibling. Use "तुम", not "आप". Never use the words "wrong" or "galat" or "गलत".
+- Warm tone. Never use the words "wrong" or "galat" or "गलत", or their equivalents in any language.
+
+For the same chosen point, also write, in the same language as the question:
+- hint: one short sentence that points the learner where to look. It must not state the idea or the answer.
+- explanation: two short sentences that state the idea plainly.
+If every point is covered or closed, both are empty strings.
 
 Also report:
 - dont_know: true if the learner said they do not know ("pata nahi", "I don't know").
 - off_topic: true if the learner talked about something else.
-- reply_lang: "hindi", "english" or "hinglish", the language the learner used most in their latest words.
+- reply_lang: the language the learner used most in their latest words: "hindi", "hinglish" (Hindi mixed with English), "english", "punjabi", "telugu" or "kannada".
 - unclear_word: if your judgement of a point depends on one word that may have been misheard, give the word heard and the likely alternative. Otherwise null.
 Return JSON only."""
 
 JUDGE_SCHEMA = {
     "type": "object",
     "properties": {
+        "learner_meaning": {"type": "string"},
         "points": {
             "type": "array",
             "items": {
@@ -160,7 +177,10 @@ JUDGE_SCHEMA = {
         "first_gap_id": {"type": ["integer", "null"]},
         "dont_know": {"type": "boolean"},
         "off_topic": {"type": "boolean"},
-        "reply_lang": {"type": "string", "enum": ["hindi", "english", "hinglish"]},
+        "reply_lang": {
+            "type": "string",
+            "enum": ["hindi", "hinglish", "english", "punjabi", "telugu", "kannada"],
+        },
         "unclear_word": {
             "anyOf": [
                 {"type": "null"},
@@ -177,8 +197,11 @@ JUDGE_SCHEMA = {
         },
         "must_not_say": {"type": "string"},
         "follow_up": {"type": "string"},
+        "hint": {"type": "string"},
+        "explanation": {"type": "string"},
     },
     "required": [
+        "learner_meaning",
         "points",
         "first_gap_id",
         "dont_know",
@@ -187,6 +210,8 @@ JUDGE_SCHEMA = {
         "unclear_word",
         "must_not_say",
         "follow_up",
+        "hint",
+        "explanation",
     ],
     "additionalProperties": False,
 }

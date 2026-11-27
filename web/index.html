@@ -4,9 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Samjhao: a voice tutor that listens</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Screen 1: Home. Always appears, with or without keys. -->
   <main class="screen" id="home">
     <header class="brand">
       <h1>Samjhao</h1>
@@ -32,12 +34,28 @@
       <p class="prompt-en" lang="en">What will you explain today? Say the topic and your class.</p>
     </section>
 
-    <button class="mic" id="mic" type="button" disabled aria-label="Mic (off until keys are set)">
+    <button class="mic" id="mic" type="button" disabled aria-label="Mic">
       <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
         <path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.6a6 6 0 0 0 5-5.9z"/>
       </svg>
     </button>
     <p class="mic-label" id="mic-label">Checking…</p>
+
+    <!-- The text box: the backup when the mic or speech is not available. -->
+    <form class="typed" id="home-form" hidden>
+      <label for="home-input">Type your topic and class</label>
+      <div class="typed-row">
+        <input id="home-input" type="text" autocomplete="off" maxlength="300"
+               placeholder="Newton's third law, Class 11">
+        <button type="submit" class="send">Start</button>
+      </div>
+    </form>
+
+    <fieldset class="voice" id="voice-picker" hidden>
+      <legend>Samjhao's voice</legend>
+      <label><input type="radio" name="voice" value="male" checked> <span>Male</span></label>
+      <label><input type="radio" name="voice" value="female"> <span>Female</span></label>
+    </fieldset>
 
     <section class="examples" aria-label="Example topics">
       <p class="examples-title">Not sure? Try one of these:</p>
@@ -51,13 +69,53 @@
     <section class="how">
       <h2>How it works</h2>
       <ol>
-        <li>Say any topic, in Hindi, English or a mix.</li>
-        <li>Explain it aloud, as if to your younger brother.</li>
+        <li>Say any topic, in Hindi, English, Punjabi, Telugu or Kannada, or a mix.</li>
+        <li>Explain it aloud, as if to your younger brother or sister.</li>
         <li>Samjhao asks one short question about the part you skipped. It does not give the answer.</li>
         <li>See which points you explained on your own.</li>
       </ol>
       <p class="privacy">No login. Nothing is stored after a session.</p>
     </section>
+  </main>
+
+  <!-- Screen 2 and 3: Explain, then the follow-up loop. -->
+  <main class="screen" id="talk" hidden>
+    <header class="brand small">
+      <h1>Samjhao</h1>
+    </header>
+
+    <div class="progress" id="progress" aria-label="Progress" hidden></div>
+
+    <p class="tutor-text" id="tutor-text" aria-live="polite"></p>
+    <p class="thinking" id="thinking" hidden></p>
+
+    <section class="heard" id="heard" hidden>
+      <p class="heard-label">You said</p>
+      <p class="heard-text" id="heard-text"></p>
+    </section>
+
+    <form class="typed" id="talk-form">
+      <label for="talk-input" id="talk-label">Type your answer</label>
+      <textarea id="talk-input" rows="4" maxlength="3000"></textarea>
+      <button type="submit" class="send wide">Send</button>
+    </form>
+
+    <button type="button" class="link-button" id="start-over">New topic</button>
+  </main>
+
+  <!-- Screen 4: Summary. The key points are shown only here. -->
+  <main class="screen" id="summary" hidden>
+    <header class="brand small">
+      <h1>Samjhao</h1>
+    </header>
+    <p class="tutor-text" id="summary-text"></p>
+    <ul class="points" id="points"></ul>
+    <p class="legend">
+      <span class="mark green" aria-hidden="true">✓</span> You explained it on your own
+      <br>
+      <span class="mark amber" aria-hidden="true">●</span> Needed a hint, or Samjhao explained it
+    </p>
+    <button type="button" class="send wide" id="new-topic">नया topic</button>
   </main>
 
   <noscript>

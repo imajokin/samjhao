@@ -13,6 +13,11 @@ from dataclasses import dataclass
 DEFAULT_LIVE_DEMO_URL = ""
 DEFAULT_VIDEO_URL = ""
 
+# The judging model Shubham picked on 27 Nov 2026, and OpenRouter's address.
+# Both can be changed with one setting if a model gets costly or is withdrawn.
+DEFAULT_LLM_MODEL = "anthropic/claude-haiku-5.5"
+DEFAULT_LLM_BASE_URL = "https://openrouter.ai/api/v1"
+
 
 def _text(name: str, default: str = "") -> str:
     """A setting as text. Blank or missing gives the default."""
@@ -34,6 +39,7 @@ class Settings:
     openrouter_api_key: str
     llm_model: str
     llm_base_url: str
+    llm_thinking: bool
     sarvam_api_key: str
     sarvam_stt_model: str
     sarvam_stt_mode: str
@@ -65,7 +71,15 @@ class Settings:
 
     def public(self) -> dict:
         """What the browser is allowed to know. Contains no key."""
+        from app.tutor.strings import LANGUAGES, STRINGS
+
+        # The few fixed phrases the page itself shows, in each language.
+        page_keys = ("thinking", "new_topic_button", "rerecord_button")
+        phrases = {
+            lang: {key: STRINGS[key][lang] for key in page_keys} for lang in LANGUAGES
+        }
         return {
+            "phrases": phrases,
             "judging": self.judging,
             "speech": self.speech,
             "live_demo_url": self.live_demo_url,
@@ -76,8 +90,9 @@ class Settings:
 def load_settings() -> Settings:
     return Settings(
         openrouter_api_key=_text("OPENROUTER_API_KEY"),
-        llm_model=_text("LLM_MODEL"),
-        llm_base_url=_text("LLM_BASE_URL"),
+        llm_model=_text("LLM_MODEL", DEFAULT_LLM_MODEL),
+        llm_base_url=_text("LLM_BASE_URL", DEFAULT_LLM_BASE_URL),
+        llm_thinking=_text("LLM_THINKING", "on").lower() != "off",
         sarvam_api_key=_text("SARVAM_API_KEY"),
         sarvam_stt_model=_text("SARVAM_STT_MODEL"),
         sarvam_stt_mode=_text("SARVAM_STT_MODE"),

@@ -51,12 +51,13 @@ class KeylessStart(unittest.TestCase):
         self.assertEqual(config["judging"], False)
         self.assertEqual(config["speech"], False)
         self.assertEqual(
-            set(config), {"judging", "speech", "live_demo_url", "video_url"}
+            set(config), {"judging", "speech", "live_demo_url", "video_url", "phrases"}
         )
 
     def test_key_routes_answer_cleanly(self):
-        for path in ("/api/session/start", "/api/transcribe", "/api/speak"):
-            reply = self.client.post(path)
+        paths = ("/api/session/start", "/api/session/abc/turn", "/api/transcribe", "/api/speak")
+        for path in paths:
+            reply = self.client.post(path, json={})
             self.assertEqual(reply.status_code, 503, path)
             body = reply.json()
             self.assertEqual(body["error"], "keys_not_set", path)

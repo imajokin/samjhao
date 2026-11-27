@@ -39,7 +39,7 @@ class FakeJudge:
 
 
 def client(judge=None, **env) -> TestClient:
-    settings_env = {"OPENROUTER_API_KEY": "test-value", **env}
+    settings_env = {"OPENROUTER_API_KEY": "test-value", "SARVAM_API_KEY": "", **env}
     with mock.patch.dict(os.environ, settings_env, clear=False):
         return TestClient(create_app(load_settings(), judge=judge or FakeJudge()))
 
@@ -65,6 +65,26 @@ class SessionRoutes(unittest.TestCase):
         self.assertEqual(done["action"], "done")
         self.assertEqual([p["result"] for p in done["summary"]["points"]], ["green", "green"])
         self.assertEqual(api.get(f"/api/session/{sid}/summary").json(), done["summary"])
+
+    def test_saying_it_again_replaces_the_last_answer(self):
+        api = client()
+        sid = api.post("/api/session/start", json={"topic_text": "Day and night, Class 8"}).json()["session_id"]
+        api.post(f"/api/session/{sid}/turn", json={"transcript": LONG})
+        # A misheard answer: it misses, so a hint is given and a try is used.
+        missed = api.post(f"/api/session/{sid}/turn", json={"transcript": "garbled words"}).json()
+        self.assertEqual(missed["action"], "hint")
+        # Said again: the miss is undone, and the point is green, not amber.
+        done = api.post(
+            f"/api/session/{sid}/turn", json={"transcript": "everything", "redo": True}
+        ).json()
+        self.assertEqual(done["action"], "done")
+        self.assertEqual([p["result"] for p in done["summary"]["points"]], ["green", "green"])
+
+    def test_speech_routes_need_the_sarvam_key(self):
+        api = client()
+        self.assertEqual(api.post("/api/speak", json={"text": "hello"}).json()["error"], "keys_not_set")
+        reply = api.post("/api/transcribe", content=b"abc", headers={"Content-Type": "audio/webm"})
+        self.assertEqual(reply.json()["error"], "keys_not_set")
 
     def test_unknown_session(self):
         reply = client().post("/api/session/nope/turn", json={"transcript": "hello"})

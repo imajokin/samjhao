@@ -8,11 +8,13 @@ returns a key, and learners' words are never logged.
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.config import Settings, load_settings
+from app.providers import stt_sarvam, tts_sarvam
 from app.providers.errors import ServiceDown
 from app.providers.llm_openrouter import OpenRouter
 from app.ratelimit import RateLimiter
@@ -35,6 +37,16 @@ class TurnBody(BaseModel):
     transcript: str = Field(default="", max_length=4000)
     heard_ok: bool = True
     silent: bool = False
+    redo: bool = False  # "Heard it wrong? Say it again": replaces the last answer
+
+
+class SpeakBody(BaseModel):
+    text: str = Field(default="", max_length=2500)
+    lang: str = Field(default="hindi", max_length=12)
+    voice: str = Field(default="male", max_length=10)
+
+
+MAX_AUDIO_BYTES = 4 * 1024 * 1024  # one piece of up to 30 seconds is far smaller
 
 
 def error(status: int, code: str, **extra) -> JSONResponse:
@@ -103,6 +115,10 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
         session = sessions.get(session_id)
         if session is None:
             return error(404, "session_not_found")
+        if body.redo:
+            # Go back to how things stood before the misheard answer.
+            sessions.rewind(session)
+        sessions.remember(session)
         try:
             return tutor.turn(session, body.transcript, body.heard_ok, body.silent)
         except ServiceDown as problem:
@@ -122,16 +138,37 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
         return session.summary()
 
     @app.post("/api/transcribe")
-    def transcribe() -> JSONResponse:
+    async def transcribe(request: Request):
+        """One piece of recorded audio in, its transcript out. Nothing is kept."""
         if not settings.speech:
             return keys_not_set(["SARVAM_API_KEY"])
-        return error(501, "not_built_yet")
+        if (stop := blocked(request)) is not None:
+            return stop
+        audio = await request.body()
+        if not audio:
+            return {"transcript": "", "language_code": ""}
+        if len(audio) > MAX_AUDIO_BYTES:
+            return error(413, "audio_too_large")
+        content_type = request.headers.get("content-type", "audio/webm")
+        try:
+            return await run_in_threadpool(stt_sarvam.transcribe, settings, audio, content_type)
+        except ServiceDown as problem:
+            return service_down(problem, "hinglish")
 
     @app.post("/api/speak")
-    def speak() -> JSONResponse:
+    def speak(body: SpeakBody, request: Request):
+        """Text in, spoken audio out."""
         if not settings.speech:
             return keys_not_set(["SARVAM_API_KEY"])
-        return error(501, "not_built_yet")
+        if (stop := blocked(request)) is not None:
+            return stop
+        if not body.text.strip():
+            return error(400, "nothing_to_say")
+        try:
+            audio = tts_sarvam.speak(settings, body.text, body.lang, body.voice)
+        except ServiceDown as problem:
+            return service_down(problem, body.lang, body.voice)
+        return Response(content=audio, media_type="audio/mpeg")
 
     # The web page. Mounted last so the routes above win.
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

@@ -41,6 +41,8 @@
     </button>
     <p class="mic-label" id="mic-label">Checking…</p>
 
+    <button type="button" class="link-button" id="home-type-link" hidden>Type instead</button>
+
     <!-- The text box: the backup when the mic or speech is not available. -->
     <form class="typed" id="home-form" hidden>
       <label for="home-input">Type your topic and class</label>
@@ -92,9 +94,20 @@
     <section class="heard" id="heard" hidden>
       <p class="heard-label">You said</p>
       <p class="heard-text" id="heard-text"></p>
+      <button type="button" class="rerecord" id="rerecord" hidden>गलत सुना? फिर से बोलो</button>
     </section>
 
-    <form class="typed" id="talk-form">
+    <div class="mic-area" id="talk-mic-area">
+      <button class="mic" id="talk-mic" type="button" disabled aria-label="Mic">
+        <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
+          <path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.6a6 6 0 0 0 5-5.9z"/>
+        </svg>
+      </button>
+      <p class="mic-label" id="talk-mic-label"></p>
+      <button type="button" class="link-button" id="talk-type-link" hidden>Type instead</button>
+    </div>
+
+    <form class="typed" id="talk-form" hidden>
       <label for="talk-input" id="talk-label">Type your answer</label>
       <textarea id="talk-input" rows="4" maxlength="3000"></textarea>
       <button type="submit" class="send wide">Send</button>
@@ -123,6 +136,7 @@
   </noscript>
 
   <script src="api.js"></script>
+  <script src="audio.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

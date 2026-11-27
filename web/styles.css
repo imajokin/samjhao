@@ -386,3 +386,41 @@ body {
   height: 22px;
   font-size: 0.8rem;
 }
+
+/* ----- Mic while recording, and the re-record button ----- */
+
+.mic.recording {
+  background: #c62828;
+  box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.5);
+  animation: pulse 1.2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.5); }
+  100% { box-shadow: 0 0 0 22px rgba(198, 40, 40, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic.recording { animation: none; box-shadow: 0 0 0 8px rgba(198, 40, 40, 0.35); }
+}
+
+.mic-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mic-area .mic-label { margin-bottom: 4px; }
+
+.rerecord {
+  font: inherit;
+  font-weight: 600;
+  margin-top: 10px;
+  background: #ffffff;
+  color: var(--brand);
+  border: 2px solid var(--brand);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}

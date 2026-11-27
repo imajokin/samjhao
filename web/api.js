@@ -6,17 +6,25 @@ const Api = {
   // reply, so the page can always show plain words instead of a raw error.
   async send(method, path, body) {
     const options = { method, cache: "no-store", headers: {} };
-    if (body !== undefined) {
+    if (body instanceof Blob) {
+      options.headers["Content-Type"] = body.type || "audio/webm";
+      options.body = body;
+    } else if (body !== undefined) {
       options.headers["Content-Type"] = "application/json";
       options.body = JSON.stringify(body);
     }
     try {
       const reply = await fetch(path, options);
+      const type = reply.headers.get("content-type") || "";
       let data = {};
-      try {
-        data = await reply.json();
-      } catch (error) {
-        data = {};
+      if (type.startsWith("audio/")) {
+        data = await reply.blob();
+      } else {
+        try {
+          data = await reply.json();
+        } catch (error) {
+          data = {};
+        }
       }
       return { ok: reply.ok, status: reply.status, data };
     } catch (error) {
@@ -30,16 +38,30 @@ const Api = {
   },
 
   // The learner has said a topic.
-  start(topicText, voice) {
-    return Api.send("POST", "/api/session/start", { topic_text: topicText, voice });
+  start(topicText, voice, languageCode) {
+    return Api.send("POST", "/api/session/start", {
+      topic_text: topicText,
+      voice,
+      language_code: languageCode || "",
+    });
   },
 
-  // The learner has answered.
+  // The learner has answered. flags: {heard_ok, silent, redo}
   turn(sessionId, transcript, flags) {
     return Api.send("POST", "/api/session/" + sessionId + "/turn", {
       transcript,
       heard_ok: true,
       ...(flags || {}),
     });
+  },
+
+  // One piece of recorded audio -> {transcript, language_code}
+  transcribe(blob) {
+    return Api.send("POST", "/api/transcribe", blob);
+  },
+
+  // Text -> spoken audio (a Blob)
+  speak(text, lang, voice) {
+    return Api.send("POST", "/api/speak", { text, lang, voice });
   },
 };

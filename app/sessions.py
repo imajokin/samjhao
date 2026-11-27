@@ -4,6 +4,7 @@ Nothing is written to disk. When a session expires, the learner's words
 are gone. One process holds them all, which is why the app runs one worker.
 """
 
+import copy
 import threading
 import time
 
@@ -17,6 +18,7 @@ class SessionStore:
     def __init__(self, ttl_minutes: int = 30):
         self.ttl_seconds = ttl_minutes * 60
         self._sessions: dict[str, tuple[float, Session]] = {}
+        self._before: dict[str, Session] = {}  # each session as it was one turn ago
         self._lock = threading.Lock()
 
     def create(self, voice: str = "male") -> Session:
@@ -26,6 +28,7 @@ class SessionStore:
             if len(self._sessions) >= MAX_SESSIONS:
                 oldest = min(self._sessions, key=lambda key: self._sessions[key][0])
                 del self._sessions[oldest]
+                self._before.pop(oldest, None)
             self._sessions[session.id] = (time.monotonic(), session)
         return session
 
@@ -39,10 +42,23 @@ class SessionStore:
             self._sessions[session_id] = (time.monotonic(), entry[1])
             return entry[1]
 
+    def remember(self, session: Session) -> None:
+        """Keeps a copy of the session as it stands, before a turn changes it."""
+        with self._lock:
+            self._before[session.id] = copy.deepcopy(session)
+
+    def rewind(self, session: Session) -> None:
+        """Undoes the last turn, so a misheard answer can be said again."""
+        with self._lock:
+            before = self._before.get(session.id)
+            if before is not None:
+                session.__dict__.update(copy.deepcopy(before).__dict__)
+
     def _forget_old(self) -> None:
         cutoff = time.monotonic() - self.ttl_seconds
         for key in [k for k, (seen, _) in self._sessions.items() if seen < cutoff]:
             del self._sessions[key]
+            self._before.pop(key, None)
 
     def __len__(self) -> int:
         return len(self._sessions)

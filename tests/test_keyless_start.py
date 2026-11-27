@@ -40,7 +40,7 @@ class KeylessStart(unittest.TestCase):
         self.assertIn('id="notice"', reply.text)
 
     def test_page_files_load(self):
-        for name in ("styles.css", "app.js", "api.js"):
+        for name in ("styles.css", "app.js", "api.js", "audio.js"):
             self.assertEqual(self.client.get("/" + name).status_code, 200, name)
 
     def test_keys_missing_message_is_in_the_page_code(self):

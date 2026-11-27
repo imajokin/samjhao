@@ -1,5 +1,6 @@
 // The screens and the flow: Home -> Explain -> Follow-up loop -> Summary.
-// The server decides what happens next. This file only shows it.
+// The server decides what happens next. This file only shows it, records
+// the learner, and plays the replies.
 
 const NOTICES = {
   // No keys at all: what reviewers see on a fresh download.
@@ -32,15 +33,24 @@ const NOTICES = {
   },
 };
 
-const SERVICE_DOWN = "अभी थोड़ी दिक्कत आ रही है। थोड़ी देर में फिर से कोशिश करो। / Something is not working right now. Please try again in a little while.";
-const SESSION_GONE = "यह session पूरा हो चुका है। नया topic शुरू करो। / This session has ended. Please start a new topic.";
-const SLOW_DOWN = "थोड़ा रुको, फिर कोशिश करो। / Please wait a moment and try again.";
+const TEXT = {
+  serviceDown: "अभी थोड़ी दिक्कत आ रही है। थोड़ी देर में फिर से कोशिश करो। / Something is not working right now. Please try again in a little while.",
+  sessionGone: "यह session पूरा हो चुका है। नया topic शुरू करो। / This session has ended. Please start a new topic.",
+  slowDown: "थोड़ा रुको, फिर कोशिश करो। / Please wait a moment and try again.",
+  tapToSpeak: "Mic दबाओ और बोलो · Tap the mic and speak",
+  listening: "सुन रहा हूँ… रुकने के लिए फिर दबाओ · Listening… tap again to stop",
+  speechFailed: "आवाज़ अभी काम नहीं कर रही। Type करके बताओ। / Speech is not working right now. Please type instead.",
+  micBlocked: "Mic की अनुमति नहीं मिली। Address bar के ताले (lock) पर tap करके Microphone को Allow करो, या नीचे type करो। / The mic is blocked. Tap the lock icon in the address bar and allow the microphone, or type below.",
+};
 
 const state = {
   config: null,
   sessionId: null,
   lang: "hinglish",
   busy: false,
+  voiceOn: false, // true when the mic can be used
+  where: "home", // which mic is in use: "home" or "talk"
+  lastWasSpoken: false,
 };
 
 function byId(id) {
@@ -119,17 +129,135 @@ async function startHome() {
     showNotice(notice, config);
   } else {
     byId("notice").hidden = true;
-    byId("mic-label").textContent = "Voice is being built. Type for now.";
+  }
+  if (!config.judging) return; // nothing can be judged, so nothing to start
+
+  byId("voice-picker").hidden = false;
+  for (const chip of document.querySelectorAll(".chip")) {
+    chip.disabled = false;
+    chip.addEventListener("click", () => {
+      Player.unlock();
+      beginTopic(chip.textContent, "", false);
+    });
   }
 
-  // Judging is all the typed flow needs.
-  if (config.judging) {
-    byId("home-form").hidden = false;
-    byId("voice-picker").hidden = false;
-    for (const chip of document.querySelectorAll(".chip")) {
-      chip.disabled = false;
-      chip.addEventListener("click", () => beginTopic(chip.textContent));
+  state.voiceOn = Boolean(config.speech) && Recorder.supported();
+  if (state.voiceOn) {
+    byId("mic").disabled = false;
+    byId("mic-label").textContent = TEXT.tapToSpeak;
+    byId("home-type-link").hidden = false;
+    byId("talk-type-link").hidden = false;
+  } else {
+    // No speech: the text box is the way in.
+    showTextBox(true);
+    if (config.speech) byId("mic-label").textContent = TEXT.micBlocked;
+  }
+}
+
+// Shows the text boxes. With `only`, the mics are hidden too.
+function showTextBox(only) {
+  byId("home-form").hidden = false;
+  byId("talk-form").hidden = false;
+  byId("home-type-link").hidden = true;
+  byId("talk-type-link").hidden = true;
+  if (only) byId("talk-mic-area").hidden = true;
+}
+
+// ----- Listening -----
+
+function setMic(mode) {
+  // mode: "idle", "recording" or "busy"
+  for (const id of ["mic", "talk-mic"]) {
+    const button = byId(id);
+    button.classList.toggle("recording", mode === "recording");
+    button.disabled = mode === "busy" || !state.voiceOn;
+  }
+  const label = mode === "recording" ? TEXT.listening : TEXT.tapToSpeak;
+  if (state.voiceOn) {
+    byId("mic-label").textContent = label;
+    byId("talk-mic-label").textContent = label;
+  }
+}
+
+// Records the learner and gives back {text, languageCode, failed}.
+function listen() {
+  return new Promise((resolve, reject) => {
+    const pieces = [];
+    Recorder.start({
+      onPiece: (blob) => pieces.push(Api.transcribe(blob)),
+      onStop: async (reason, heardVoice) => {
+        setMic("busy");
+        const replies = await Promise.all(pieces);
+        const failed = replies.some((reply) => !reply.ok);
+        const texts = replies.map((reply) => (reply.ok && reply.data.transcript) || "");
+        const code = replies.map((reply) => reply.ok && reply.data.language_code).find(Boolean);
+        const text = heardVoice ? texts.join(" ").replace(/\s+/g, " ").trim() : "";
+        resolve({ text, languageCode: code || "", failed });
+      },
+    })
+      .then(() => setMic("recording"))
+      .catch(reject);
+  });
+}
+
+async function micTapped(where, redo) {
+  Player.unlock();
+  if (Recorder.active) {
+    Recorder.stop("tap");
+    return;
+  }
+  if (state.busy) return;
+  Player.stop();
+  state.where = where;
+
+  let heard;
+  try {
+    heard = await listen();
+  } catch (error) {
+    // The mic was refused, or there is none.
+    state.voiceOn = false;
+    setMic("idle");
+    byId("mic-label").textContent = TEXT.micBlocked;
+    byId("talk-mic-label").textContent = TEXT.micBlocked;
+    showTextBox(false);
+    return;
+  }
+  setMic("idle");
+
+  if (heard.failed && !heard.text) {
+    // The speech service failed: offer the text box.
+    showTextBox(false);
+    sayLocally(TEXT.speechFailed, where);
+    return;
+  }
+  if (where === "home") {
+    if (!heard.text) {
+      sayLocally(phrase("not_heard", "आवाज़ साफ़ नहीं आई। फिर से बोलो।"), where, true);
+      return;
     }
+    beginTopic(heard.text, heard.languageCode, true);
+  } else {
+    sendAnswer(heard.text, { heard_ok: Boolean(heard.text), redo: Boolean(redo) }, true);
+  }
+}
+
+// Shows a line that did not come from the server, and may speak it.
+function sayLocally(text, where, aloud) {
+  if (where === "home") {
+    byId("mic-label").textContent = text;
+  } else {
+    byId("tutor-text").textContent = text;
+  }
+  if (aloud) speak(text);
+}
+
+// ----- Speaking -----
+
+async function speak(text) {
+  if (!state.config || !state.config.speech || !text) return;
+  const reply = await Api.speak(text, state.lang, chosenVoice());
+  if (reply.ok && reply.data instanceof Blob && !Recorder.active) {
+    await Player.play(reply.data);
   }
 }
 
@@ -142,6 +270,7 @@ function setBusy(busy) {
   for (const button of document.querySelectorAll(".send")) {
     button.disabled = busy;
   }
+  setMic(busy ? "busy" : "idle");
 }
 
 function showProgress(progress) {
@@ -161,41 +290,51 @@ function showProgress(progress) {
   row.hidden = false;
 }
 
+function showHeard(text, spoken) {
+  byId("heard").hidden = !text;
+  byId("heard-text").textContent = text;
+  state.lastWasSpoken = Boolean(spoken && text);
+  const again = byId("rerecord");
+  again.textContent = phrase("rerecord_button", "गलत सुना? फिर से बोलो");
+  // Only a spoken answer inside a session can be said again.
+  again.hidden = !(state.lastWasSpoken && state.sessionId);
+}
+
 function showProblem(reply) {
   const data = reply.data || {};
-  let text = SERVICE_DOWN;
+  let text = TEXT.serviceDown;
   if (data.error === "service_down" && data.text) text = data.text;
   if (data.error === "daily_cap") text = (data.text_hi || "") + " / " + (data.text || "");
-  if (data.error === "rate_limited") text = SLOW_DOWN;
-  if (data.error === "session_not_found") text = SESSION_GONE;
+  if (data.error === "rate_limited") text = TEXT.slowDown;
+  if (data.error === "session_not_found") text = TEXT.sessionGone;
   if (data.error === "keys_not_set") text = NOTICES.none.hi + " / " + NOTICES.none.en;
   byId("tutor-text").textContent = text;
 }
 
 function showReply(data) {
   state.lang = data.lang || state.lang;
+  if (data.action === "show_text_box") showTextBox(false);
   if (data.action === "done") {
     showSummary(data);
-    return;
+  } else {
+    byId("tutor-text").textContent = data.text;
+    showProgress(data.progress);
+    byId("talk-input").value = "";
   }
-  byId("tutor-text").textContent = data.text;
-  showProgress(data.progress);
-  byId("talk-input").value = "";
-  byId("talk-input").focus();
+  speak(data.text); // everything shown is also spoken
 }
 
-async function beginTopic(topicText) {
+async function beginTopic(topicText, languageCode, spoken) {
   const text = (topicText || "").trim();
   if (!text || state.busy) return;
   state.sessionId = null;
   state.lang = "hinglish";
   byId("tutor-text").textContent = "";
-  byId("heard").hidden = false;
-  byId("heard-text").textContent = text;
+  showHeard(text, false);
   showProgress(null);
   show("talk");
   setBusy(true);
-  const reply = await Api.start(text, chosenVoice());
+  const reply = await Api.start(text, chosenVoice(), languageCode);
   setBusy(false);
   if (!reply.ok) {
     showProblem(reply);
@@ -205,18 +344,18 @@ async function beginTopic(topicText) {
   showReply(reply.data);
 }
 
-async function sendAnswer(text) {
+async function sendAnswer(text, flags, spoken) {
   const answer = (text || "").trim();
-  if (!answer || state.busy) return;
+  const notHeard = flags && flags.heard_ok === false;
+  if ((!answer && !notHeard) || state.busy) return;
   if (!state.sessionId) {
     // The start itself failed earlier, so treat this as a new topic.
-    beginTopic(answer);
+    if (answer) beginTopic(answer, "", spoken);
     return;
   }
-  byId("heard").hidden = false;
-  byId("heard-text").textContent = answer;
+  if (answer) showHeard(answer, spoken);
   setBusy(true);
-  const reply = await Api.turn(state.sessionId, answer);
+  const reply = await Api.turn(state.sessionId, answer, flags);
   setBusy(false);
   if (!reply.ok) {
     showProblem(reply);
@@ -249,23 +388,34 @@ function showSummary(data) {
 }
 
 function backHome() {
+  Player.stop();
+  if (Recorder.active) Recorder.stop("tap");
   state.sessionId = null;
   byId("home-input").value = "";
+  if (state.voiceOn) byId("mic-label").textContent = TEXT.tapToSpeak;
   show("home");
 }
 
 // ----- Wiring -----
 
+byId("mic").addEventListener("click", () => micTapped("home", false));
+byId("talk-mic").addEventListener("click", () => micTapped("talk", false));
+byId("rerecord").addEventListener("click", () => micTapped("talk", true));
+
 byId("home-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  beginTopic(byId("home-input").value);
+  Player.unlock();
+  beginTopic(byId("home-input").value, "", false);
 });
 
 byId("talk-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  sendAnswer(byId("talk-input").value);
+  Player.unlock();
+  sendAnswer(byId("talk-input").value, {}, false);
 });
 
+byId("home-type-link").addEventListener("click", () => showTextBox(false));
+byId("talk-type-link").addEventListener("click", () => showTextBox(false));
 byId("new-topic").addEventListener("click", backHome);
 byId("start-over").addEventListener("click", backHome);
 

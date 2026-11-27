@@ -18,6 +18,14 @@ DEFAULT_VIDEO_URL = ""
 DEFAULT_LLM_MODEL = "anthropic/claude-haiku-5.5"
 DEFAULT_LLM_BASE_URL = "https://openrouter.ai/api/v1"
 
+# Sarvam speech. The regular speech-to-text model (not Dictate), and the two
+# voices Shubham picked by ear on 27 Nov 2026.
+DEFAULT_STT_MODEL = "saaras:v4"
+DEFAULT_STT_MODE = "codemix"
+DEFAULT_TTS_MODEL = "bulbul:v3"
+DEFAULT_TTS_VOICE_MALE = "shubh"
+DEFAULT_TTS_VOICE_FEMALE = "ritu"
+
 
 def _text(name: str, default: str = "") -> str:
     """A setting as text. Blank or missing gives the default."""
@@ -43,7 +51,9 @@ class Settings:
     sarvam_api_key: str
     sarvam_stt_model: str
     sarvam_stt_mode: str
-    sarvam_tts_voice: str
+    sarvam_tts_model: str
+    sarvam_tts_voice_male: str
+    sarvam_tts_voice_female: str
     live_demo_url: str
     video_url: str
     session_ttl_minutes: int
@@ -74,7 +84,7 @@ class Settings:
         from app.tutor.strings import LANGUAGES, STRINGS
 
         # The few fixed phrases the page itself shows, in each language.
-        page_keys = ("thinking", "new_topic_button", "rerecord_button")
+        page_keys = ("thinking", "new_topic_button", "rerecord_button", "not_heard")
         phrases = {
             lang: {key: STRINGS[key][lang] for key in page_keys} for lang in LANGUAGES
         }
@@ -94,9 +104,11 @@ def load_settings() -> Settings:
         llm_base_url=_text("LLM_BASE_URL", DEFAULT_LLM_BASE_URL),
         llm_thinking=_text("LLM_THINKING", "on").lower() != "off",
         sarvam_api_key=_text("SARVAM_API_KEY"),
-        sarvam_stt_model=_text("SARVAM_STT_MODEL"),
-        sarvam_stt_mode=_text("SARVAM_STT_MODE"),
-        sarvam_tts_voice=_text("SARVAM_TTS_VOICE"),
+        sarvam_stt_model=_text("SARVAM_STT_MODEL", DEFAULT_STT_MODEL),
+        sarvam_stt_mode=_text("SARVAM_STT_MODE", DEFAULT_STT_MODE),
+        sarvam_tts_model=_text("SARVAM_TTS_MODEL", DEFAULT_TTS_MODEL),
+        sarvam_tts_voice_male=_text("SARVAM_TTS_VOICE_MALE", DEFAULT_TTS_VOICE_MALE),
+        sarvam_tts_voice_female=_text("SARVAM_TTS_VOICE_FEMALE", DEFAULT_TTS_VOICE_FEMALE),
         live_demo_url=_text("LIVE_DEMO_URL", DEFAULT_LIVE_DEMO_URL),
         video_url=_text("VIDEO_URL", DEFAULT_VIDEO_URL),
         session_ttl_minutes=_number("SESSION_TTL_MINUTES", 30),

@@ -13,6 +13,7 @@ LANGUAGE_RULES = """Samjhao works in Hindi, English, Punjabi, Telugu and Kannada
 KEY_POINTS_PROMPT = """You are Samjhao, a warm tutor who listens. A learner explains a concept aloud to you, and you help them find the gaps in their own understanding. Right now the conversation is just beginning: you are finding out what they want to explain. You talk the way a good teacher or an older sibling talks to a student they like: relaxed, curious, natural. You are having a conversation, not running a form.
 
 The learner's class or level (chosen on screen): {level}
+App language: {app_language}
 Topic already confirmed by the learner: {confirmed}
 
 The conversation so far:
@@ -103,6 +104,7 @@ JUDGE_PROMPT = """You are Samjhao, a warm tutor who listens. A learner is explai
 
 Topic: {topic}
 Level: {level}
+App language: {app_language}
 
 The key points a correct explanation must include, with their status so far:
 {key_points}

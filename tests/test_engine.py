@@ -34,7 +34,7 @@ class FakeJudge:
         self.heard = []
         self.support_calls = 0
 
-    def make_key_points(self, topic, level, confirmed, conversation=""):
+    def make_key_points(self, topic, level, confirmed, conversation="", preferred_lang=""):
         self.plan_calls.append((topic, level, confirmed))
         self.conversations.append(conversation)
         return self.plans.pop(0)
@@ -498,6 +498,16 @@ class StartingATopic(unittest.TestCase):
         self.assertEqual(reply["action"], "follow_up")
         self.assertEqual(reply["text"], "Q?")
         self.assertEqual((reply["progress"]["done"], reply["progress"]["total"]), (2, 3))
+
+    def test_chosen_app_language_decides_the_reply_language(self):
+        judge = FakeJudge(turns=[ask((1, 2), 3, "ਸਵਾਲ?")])
+        tutor, session = Tutor(judge), new_session()
+        reply = tutor.start(session, "Why the moon has phases", "Class 8", app_language="punjabi")
+        self.assertEqual(reply["lang"], "punjabi")
+        self.assertIn("ਸਮਝਾਓ", reply["text"])  # the fixed phrase, in Punjabi
+        # The judge may report another language; the learner's choice still wins.
+        after = tutor.turn(session, LONG)
+        self.assertEqual(after["lang"], "punjabi")
 
     def test_class_from_the_home_screen_is_passed_on(self):
         judge = FakeJudge()

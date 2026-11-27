@@ -19,13 +19,15 @@ class LLMJudge:
         self.llm = llm  # anything with ask_json(prompt, schema, name)
 
     def make_key_points(
-        self, topic: str, level: str, confirmed: bool, conversation: str = ""
+        self, topic: str, level: str, confirmed: bool, conversation: str = "",
+        preferred_lang: str = "",
     ) -> TopicPlan:
         prompt = prompts.KEY_POINTS_PROMPT.format(
             topic=topic,
             level=level or "not known",
             confirmed="yes" if confirmed else "no",
             conversation=conversation or "(nothing yet; these are the learner's first words)",
+            app_language=_app_language_note(preferred_lang),
             language_rules=prompts.LANGUAGE_RULES,
         )
         answer = self.llm.ask_json(prompt, prompts.KEY_POINTS_SCHEMA, "key_points")
@@ -83,6 +85,7 @@ class LLMJudge:
             questions_total=session.questions_total or "3",
             questions_asked=session.questions_asked,
             questions_note=_questions_note(session),
+            app_language=_app_language_note(session.preferred_lang),
             transcript=transcript,
             language_rules=prompts.LANGUAGE_RULES,
         )
@@ -155,6 +158,17 @@ class LLMJudge:
             "diagram_caption": str(answer.get("diagram_caption") or "").strip(),
             "svg": safe_svg(str(answer.get("svg") or "")),
         }
+
+
+def _app_language_note(preferred_lang: str) -> str:
+    """Tells the model which language the learner picked in the app, if any."""
+    if not preferred_lang:
+        return "none chosen. Use the language the learner speaks."
+    name = PROMPT_NAMES.get(preferred_lang, preferred_lang)
+    return (
+        f"{name}. The learner chose this language in the app. Set reply_lang to "
+        f'"{preferred_lang}" and write your reply in it, even if they mix in other languages.'
+    )
 
 
 def _questions_note(session: Session) -> str:

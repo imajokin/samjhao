@@ -18,6 +18,7 @@ honest and makes loops impossible:
 import uuid
 
 from app.tutor.language import (
+    PROMPT_NAMES,
     guess_language,
     is_no,
     is_yes,
@@ -54,11 +55,21 @@ class Tutor:
     # ----- starting: topic, level, confirmation -----
 
     def start(
-        self, session: Session, topic_text: str, level: str = "", language_code: str = ""
+        self,
+        session: Session,
+        topic_text: str,
+        level: str = "",
+        language_code: str = "",
+        app_language: str = "",
     ) -> dict:
         """The learner has said something to begin: a topic, a topic with its
         explanation, or just a few words."""
-        if language_code:
+        if app_language in PROMPT_NAMES:
+            session.preferred_lang = app_language
+        if session.preferred_lang:
+            # The learner picked the app language: Samjhao replies in it.
+            session.lang = session.preferred_lang
+        elif language_code:
             session.lang = language_from_code(language_code, topic_text)
         else:
             session.lang = guess_language(topic_text)
@@ -78,8 +89,10 @@ class Tutor:
         the fixed phrases are only the backup."""
         earlier = "\n".join(f"{who}: {text}" for who, text in session.history[-HISTORY_FOR_START:])
         session.history.append(("learner", session.topic_text))
-        plan = self.judge.make_key_points(session.topic_text, session.level, confirmed, earlier)
-        if plan.reply_lang:
+        plan = self.judge.make_key_points(
+            session.topic_text, session.level, confirmed, earlier, session.preferred_lang
+        )
+        if plan.reply_lang and not session.preferred_lang:
             session.lang = plan.reply_lang
         if plan.level and not session.level:
             session.level = plan.level
@@ -160,7 +173,8 @@ class Tutor:
 
         session.history.append(("learner", transcript))
         judgement = self.judge.judge_turn(session, transcript)
-        session.lang = judgement.reply_lang or session.lang
+        if not session.preferred_lang:
+            session.lang = judgement.reply_lang or session.lang
         asked = session.point(session.current_id)
 
         if judgement.off_topic and not gave_up:

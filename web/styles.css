@@ -711,3 +711,33 @@ body {
 #home .prompt-en { font-size: 0.82rem; margin: 2px 0 10px; }
 #home .mic { width: 96px; height: 96px; }
 #home .mic-label { margin: 10px 0 12px; font-size: 0.95rem; }
+
+/* ----- Change language ----- */
+
+.language {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.language select {
+  font: inherit;
+  font-weight: 700;
+  color: var(--brand);
+  background: #ffffff;
+  border: 2px solid var(--brand);
+  border-radius: 10px;
+  padding: 5px 8px;
+}
+
+.cancel::before { content: "✕ "; }
+
+/* The language switch takes the tagline's place on the first screen, and the
+   mic label already repeats the instruction in English. */
+#home .tagline { display: none; }
+#home .prompt-en { display: none; }
+#home .language { margin: 2px 0 8px; }
+#home .prompt-hi { margin-bottom: 10px; }

@@ -173,6 +173,9 @@ def key_points_prompt(sample: dict) -> str:
         topic=sample["topic"],
         level=sample["level"],
         confirmed="yes",
+        conversation="(nothing yet)",
+        app_language="none chosen. Use the language the learner speaks.",
+        language_rules=prompts.LANGUAGE_RULES,
     )
 
 
@@ -190,6 +193,10 @@ def run_regular(key: str, model: str, sample: dict) -> dict:
             conversation="(nothing yet; this is the learner's first explanation)",
             asked_about="none; this is the first explanation",
             hints_given="none yet",
+            questions_total="3",
+            questions_asked=0,
+            questions_note="This is the first explanation.",
+            app_language="none chosen. Use the language the learner speaks.",
             transcript=sample["said"],
             language_rules=prompts.LANGUAGE_RULES,
         ),

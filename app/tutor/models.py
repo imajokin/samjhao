@@ -79,6 +79,7 @@ class Session:
     id: str
     voice: str = "male"  # the tutor's voice: male or female
     lang: str = "hinglish"  # hindi, hinglish, english, punjabi, telugu, kannada
+    preferred_lang: str = ""  # the app language the learner picked, if any
     # topic -> level -> confirm -> explain -> follow_up -> summary
     phase: str = "topic"
     topic_text: str = ""  # what the learner said
@@ -127,7 +128,8 @@ class Judge(Protocol):
     """
 
     def make_key_points(
-        self, topic: str, level: str, confirmed: bool, conversation: str = ""
+        self, topic: str, level: str, confirmed: bool, conversation: str = "",
+        preferred_lang: str = "",
     ) -> TopicPlan: ...
 
     def judge_turn(self, session: Session, transcript: str) -> Judgement: ...

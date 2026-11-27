@@ -38,10 +38,11 @@ const Api = {
   },
 
   // The learner has said a topic.
-  start(topicText, voice, languageCode, level) {
+  start(topicText, voice, languageCode, level, appLanguage) {
     return Api.send("POST", "/api/session/start", {
       topic_text: topicText,
       level: level || "",
+      app_language: appLanguage || "",
       voice,
       language_code: languageCode || "",
     });

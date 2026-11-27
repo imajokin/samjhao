@@ -37,12 +37,8 @@ const TEXT = {
   serviceDown: "अभी थोड़ी दिक्कत आ रही है। थोड़ी देर में फिर से कोशिश करो। / Something is not working right now. Please try again in a little while.",
   sessionGone: "यह session पूरा हो चुका है। नया topic शुरू करो। / This session has ended. Please start a new topic.",
   slowDown: "थोड़ा रुको, फिर कोशिश करो। / Please wait a moment and try again.",
-  tapToSpeak: "Mic दबाओ और बोलो · Tap the mic and speak",
-  listening: "सुन रहा हूँ… भेजने के लिए फिर दबाओ · Listening… tap again to send",
-  pausing: (n) => "सोच रहे हो? बोलते रहो। चुप रहे तो " + n + " सेकंड में भेज दूँगा · Still thinking? Keep talking, or it sends in " + n + "s",
   partHeard: "तुम्हारी बात का कुछ हिस्सा सुनाई नहीं दिया। जो सुना वह नीचे लिखा है: उसे ठीक करके भेजो, या mic दबाकर फिर से बोलो। / Part of what you said was not heard. What was heard is in the box below: correct it and send, or tap the mic and say it again.",
   speechFailed: "आवाज़ अभी काम नहीं कर रही। Type करके बताओ। / Speech is not working right now. Please type instead.",
-  pickClass: "पहले अपनी class चुनो · Choose your class first",
   micBlocked: "Mic की अनुमति नहीं मिली। Address bar के ताले (lock) पर tap करके Microphone को Allow करो, या नीचे type करो। / The mic is blocked. Tap the lock icon in the address bar and allow the microphone, or type below.",
 };
 
@@ -67,6 +63,23 @@ function show(screenId) {
   window.scrollTo(0, 0);
 }
 
+// The language Samjhao should reply in when the learner picked an app language.
+// Hindi speakers mix in English, so Hindi means "Hindi mixed with English".
+function appReplyLanguage() {
+  return Lang.current === "hindi" ? "hinglish" : Lang.current;
+}
+
+// The learner changed the app language.
+function changeLanguage(language) {
+  Lang.set(language);
+  Lang.apply();
+  if (!state.sessionId) state.lang = appReplyLanguage();
+  if (state.voiceOn && !Recorder.active) {
+    byId("mic-label").textContent = Lang.both("tap_to_speak");
+    byId("talk-mic-label").textContent = Lang.both("tap_to_speak");
+  }
+}
+
 // The class picked on the home screen, or "" if none yet.
 function chosenLevel() {
   const picked = document.querySelector('input[name="level"]:checked');
@@ -79,7 +92,7 @@ function haveLevel() {
   const picker = byId("class-picker");
   picker.classList.add("needed");
   picker.scrollIntoView({ block: "center" });
-  byId("mic-label").textContent = TEXT.pickClass;
+  byId("mic-label").textContent = Lang.both("pick_class");
   return false;
 }
 
@@ -91,7 +104,9 @@ function chosenVoice() {
 // A fixed phrase from the server, in the learner's language and chosen voice.
 function phrase(key, fallback) {
   const phrases = (state.config && state.config.phrases) || {};
-  const lang = state.lang === "hinglish" ? "hindi" : state.lang;
+  // During a session, use the language Samjhao is replying in. Otherwise the app language.
+  const wanted = state.sessionId || state.busy ? state.lang : Lang.current;
+  const lang = wanted === "hinglish" ? "hindi" : wanted;
   let text = (phrases[lang] || {})[key] || (phrases.hindi || {})[key] || fallback;
   if (Array.isArray(text)) {
     text = chosenVoice() === "female" ? text[1] : text[0];
@@ -168,7 +183,7 @@ async function startHome() {
   state.voiceOn = Boolean(config.speech) && Recorder.supported();
   if (state.voiceOn) {
     byId("mic").disabled = false;
-    byId("mic-label").textContent = TEXT.tapToSpeak;
+    byId("mic-label").textContent = Lang.both("tap_to_speak");
     byId("home-type-link").hidden = false;
     byId("talk-type-link").hidden = false;
   } else {
@@ -199,7 +214,7 @@ function setMic(mode) {
   // The cancel button is there only while recording.
   byId("cancel-home").hidden = mode !== "recording";
   byId("cancel-talk").hidden = mode !== "recording";
-  const label = mode === "recording" ? TEXT.listening : TEXT.tapToSpeak;
+  const label = mode === "recording" ? Lang.both("listening") : Lang.both("tap_to_speak");
   if (state.voiceOn) {
     byId("mic-label").textContent = label;
     byId("talk-mic-label").textContent = label;
@@ -215,7 +230,7 @@ function listen() {
       onQuiet: (secondsLeft) => {
         // A pause is fine. Show how long before the recording is sent.
         if (!Recorder.active) return;
-        const label = secondsLeft ? TEXT.pausing(secondsLeft) : TEXT.listening;
+        const label = secondsLeft ? Lang.both("pausing").replace(/\{n\}/g, secondsLeft) : Lang.both("listening");
         byId("mic-label").textContent = label;
         byId("talk-mic-label").textContent = label;
       },
@@ -435,7 +450,8 @@ async function beginTopic(topicText, languageCode, spoken) {
   const text = (topicText || "").trim();
   if (!text || state.busy || !haveLevel()) return;
   state.sessionId = null;
-  state.lang = guessLanguage(text) || "hinglish";
+  // The app language the learner picked wins; otherwise go by their words.
+  state.lang = Lang.chosen ? appReplyLanguage() : guessLanguage(text) || "hinglish";
   byId("tutor-text").textContent = "";
   byId("give-up").hidden = true;
   byId("jump").hidden = true;
@@ -443,7 +459,7 @@ async function beginTopic(topicText, languageCode, spoken) {
   showProgress(null);
   show("talk");
   setBusy(true, "topic");
-  const reply = await Api.start(text, chosenVoice(), languageCode, chosenLevel());
+  const reply = await Api.start(text, chosenVoice(), languageCode, chosenLevel(), Lang.chosen ? appReplyLanguage() : "");
   setBusy(false);
   if (!reply.ok) {
     showProblem(reply);
@@ -463,7 +479,7 @@ async function sendAnswer(text, flags, spoken) {
     return;
   }
   if (answer) showHeard(answer, spoken);
-  state.lang = guessLanguage(answer) || state.lang;
+  if (!Lang.chosen) state.lang = guessLanguage(answer) || state.lang;
   setBusy(true, "question");
   const reply = await Api.turn(state.sessionId, answer, flags);
   setBusy(false);
@@ -547,7 +563,7 @@ function backHome() {
   if (Recorder.active) Recorder.stop("tap");
   state.sessionId = null;
   byId("home-input").value = "";
-  if (state.voiceOn) byId("mic-label").textContent = TEXT.tapToSpeak;
+  if (state.voiceOn) byId("mic-label").textContent = Lang.both("tap_to_speak");
   show("home");
 }
 
@@ -569,17 +585,22 @@ byId("talk-form").addEventListener("submit", (event) => {
   sendAnswer(byId("talk-input").value, {}, false);
 });
 
+byId("language").addEventListener("change", (event) => changeLanguage(event.target.value));
 byId("give-up").addEventListener("click", giveUp);
 byId("jump").addEventListener("click", jumpToExplanation);
 byId("cancel-home").addEventListener("click", () => Recorder.cancel());
 byId("cancel-talk").addEventListener("click", () => Recorder.cancel());
 byId("class-picker").addEventListener("change", () => {
   byId("class-picker").classList.remove("needed");
-  if (state.voiceOn) byId("mic-label").textContent = TEXT.tapToSpeak;
+  if (state.voiceOn) byId("mic-label").textContent = Lang.both("tap_to_speak");
 });
 byId("home-type-link").addEventListener("click", () => showTextBox(false));
 byId("talk-type-link").addEventListener("click", () => showTextBox(false));
 byId("new-topic").addEventListener("click", backHome);
 byId("start-over").addEventListener("click", backHome);
 
+Lang.load();
+byId("language").value = Lang.current;
+Lang.apply();
+if (Lang.chosen) state.lang = appReplyLanguage();
 startHome();

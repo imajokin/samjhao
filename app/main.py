@@ -35,6 +35,7 @@ class StartBody(BaseModel):
     level: str = Field(default="", max_length=80)
     voice: str = Field(default="male", max_length=10)
     language_code: str = Field(default="", max_length=10)
+    app_language: str = Field(default="", max_length=12)  # picked with "change language"
 
 
 class TurnBody(BaseModel):
@@ -65,7 +66,7 @@ def versioned_home() -> str:
             stamp.update(path.read_bytes())
     version = stamp.hexdigest()[:10]
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    return re.sub(r'(href|src)="((?:styles\.css|api\.js|audio\.js|app\.js))"',
+    return re.sub(r'(href|src)="((?:styles\.css|i18n\.js|api\.js|audio\.js|app\.js))"',
                   rf'\1="\2?v={version}"', page)
 
 
@@ -148,7 +149,9 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
             return stop
         session = sessions.create(body.voice)
         try:
-            reply = tutor.start(session, body.topic_text, body.level, body.language_code)
+            reply = tutor.start(
+                session, body.topic_text, body.level, body.language_code, body.app_language
+            )
         except ServiceDown as problem:
             return service_down(problem, session.lang, session.voice)
         return {"session_id": session.id, "points_total": len(session.points), **reply}

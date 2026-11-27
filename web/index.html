@@ -13,6 +13,15 @@
     <header class="brand">
       <h1>Samjhao</h1>
       <p class="tagline">समझाओ · a voice tutor that listens</p>
+      <label class="language" for="language"><span data-tb="language">भाषा · Language</span>
+        <select id="language" aria-label="Language">
+          <option value="hindi">हिन्दी</option>
+          <option value="english">English</option>
+          <option value="punjabi">ਪੰਜਾਬੀ</option>
+          <option value="telugu">తెలుగు</option>
+          <option value="kannada">ಕನ್ನಡ</option>
+        </select>
+      </label>
     </header>
 
     <!-- Shown only when a key is missing. Filled in by app.js. -->
@@ -31,21 +40,21 @@
 
     <!-- What Samjhao is, in one line, before anything is asked. -->
     <section class="pitch">
-      <p class="pitch-hi" lang="hi">समझ आया है, या सिर्फ़ याद है? Samjhao को समझाकर देखो, तुरंत पता चल जाएगा।</p>
-      <p class="pitch-en" lang="en">Did you really understand it, or just memorise it? Explain it to Samjhao and you will know.</p>
-      <p class="pitch-plan" lang="hi"><strong>ज़्यादा से ज़्यादा 3 छोटे सवाल,</strong> यह देखने के लिए कि तुम्हें कहाँ तक समझ आया। फिर पूरा explanation, diagram के साथ।</p>
-      <p class="pitch-plan-en" lang="en">At most 3 short questions, to see how far your understanding goes. Then the full explanation with a diagram.</p>
+      <p class="pitch-hi" data-t="pitch">समझ आया है, या सिर्फ़ याद है? Samjhao को समझाकर देखो, तुरंत पता चल जाएगा।</p>
+      <p class="pitch-en en2" lang="en">Did you really understand it, or just memorise it? Explain it to Samjhao and you will know.</p>
+      <p class="pitch-plan" data-t="plan">ज़्यादा से ज़्यादा 3 छोटे सवाल, यह देखने के लिए कि तुम्हें कहाँ तक समझ आया। फिर पूरा explanation, diagram के साथ।</p>
+      <p class="pitch-plan-en en2" lang="en">At most 3 short questions, to see how far your understanding goes. Then the full explanation with a diagram.</p>
     </section>
 
     <fieldset class="voice" id="voice-picker" hidden>
-      <legend>आवाज़ · Voice</legend>
+      <legend data-tb="voice">आवाज़ · Voice</legend>
       <label><input type="radio" name="voice" value="male" checked> <span>Male</span></label>
       <label><input type="radio" name="voice" value="female"> <span>Female</span></label>
     </fieldset>
 
     <!-- Class is chosen here, once, so Samjhao never has to ask for it. -->
     <fieldset class="classes" id="class-picker">
-      <legend>अपनी class चुनो · Choose your class</legend>
+      <legend data-tb="choose_class">अपनी class चुनो · Choose your class</legend>
       <label><input type="radio" name="level" value="Class 6"><span>6</span></label>
       <label><input type="radio" name="level" value="Class 7"><span>7</span></label>
       <label><input type="radio" name="level" value="Class 8"><span>8</span></label>
@@ -58,8 +67,8 @@
     </fieldset>
 
     <section class="prompt" id="home-prompt">
-      <p class="prompt-hi" lang="hi">Mic दबाओ, topic बोलो और समझाना शुरू करो।</p>
-      <p class="prompt-en" lang="en">Tap the mic, say the topic and start explaining, in Hindi, English, ਪੰਜਾਬੀ, తెలుగు or ಕನ್ನಡ.</p>
+      <p class="prompt-hi" data-t="prompt">Mic दबाओ, topic बोलो और समझाना शुरू करो।</p>
+      <p class="prompt-en en2" lang="en">Tap the mic, say the topic and start explaining.</p>
     </section>
 
     <button class="mic" id="mic" type="button" disabled aria-label="Mic">
@@ -68,20 +77,20 @@
       </svg>
     </button>
     <p class="mic-label" id="mic-label">Checking…</p>
-    <button type="button" class="cancel" id="cancel-home" hidden>✕ रद्द करो · Cancel</button>
+    <button type="button" class="cancel" id="cancel-home" data-tb="cancel" hidden>रद्द करो · Cancel</button>
 
-    <button type="button" class="link-button" id="home-type-link" hidden>Type instead</button>
+    <button type="button" class="link-button" id="home-type-link" data-tb="type_instead" hidden>Type instead</button>
 
     <!-- The text box: the backup when the mic or speech is not available. -->
     <form class="typed" id="home-form" hidden>
-      <label for="home-input">Type the topic and your explanation</label>
+      <label for="home-input" data-tb="type_topic">Type the topic and your explanation</label>
       <textarea id="home-input" rows="4" maxlength="3000"
                 placeholder="Newton's third law: har action ka..."></textarea>
-      <button type="submit" class="send wide">Start</button>
+      <button type="submit" class="send wide" data-tb="start">Start</button>
     </form>
 
     <section class="examples" id="examples" aria-label="Example topics">
-      <p class="examples-title">Not sure? Try one of these:</p>
+      <p class="examples-title" data-t="examples">Not sure? Try one of these:</p>
       <div class="chips">
         <button class="chip" type="button" disabled>Newton's third law</button>
         <button class="chip" type="button" disabled>Photosynthesis</button>
@@ -99,14 +108,14 @@
     <!-- How it works, below the mic so the mic stays near the top. -->
     <section class="pitch how-steps">
       <ol class="steps">
-        <li><strong>तुम समझाओ।</strong> <span>You explain any topic aloud, in your own words.</span></li>
-        <li><strong>Samjhao सुनता है और ज़्यादा से ज़्यादा 3 छोटे सवाल पूछता है,</strong> उसी हिस्से पर जो छूट गया या गड़बड़ था। <span>Samjhao listens and asks at most 3 short questions, about the part you skipped or mixed up. That is how it finds out what you really understood.</span></li>
-        <li><strong>अटक गए? Hint मिलेगा, जवाब नहीं।</strong> <span>Stuck? You get a hint, not the answer.</span></li>
-        <li><strong>आख़िर में पूरा explanation, diagram के साथ।</strong> <span>At the end, the full explanation with a diagram. You can jump to it at any time.</span></li>
+        <li><strong data-t="step1">तुम समझाओ।</strong> <span class="en2">You explain any topic aloud, in your own words.</span></li>
+        <li><strong data-t="step2">Samjhao सुनता है और ज़्यादा से ज़्यादा 3 छोटे सवाल पूछता है।</strong> <span class="en2">Samjhao listens and asks at most 3 short questions, about the part you skipped or mixed up. That is how it finds out what you really understood.</span></li>
+        <li><strong data-t="step3">अटक गए? Hint मिलेगा, जवाब नहीं।</strong> <span class="en2">Stuck? You get a hint, not the answer.</span></li>
+        <li><strong data-t="step4">आख़िर में पूरा explanation, diagram के साथ।</strong> <span class="en2">At the end, the full explanation with a diagram. You can jump to it at any time.</span></li>
       </ol>
     </section>
 
-    <p class="privacy">No login. Nothing you say is saved.<br>
+    <p class="privacy"><span data-tb="privacy">No login. Nothing you say is saved.</span><br>
       Hindi · English · ਪੰਜਾਬੀ · తెలుగు · ಕನ್ನಡ</p>
   </main>
 
@@ -122,7 +131,7 @@
     <p class="thinking" id="thinking" hidden></p>
 
     <section class="heard" id="heard" hidden>
-      <p class="heard-label">You said</p>
+      <p class="heard-label" data-tb="you_said">You said</p>
       <p class="heard-text" id="heard-text"></p>
       <button type="button" class="rerecord" id="rerecord" hidden>गलत सुना? फिर से बोलो</button>
     </section>
@@ -134,17 +143,17 @@
         </svg>
       </button>
       <p class="mic-label" id="talk-mic-label"></p>
-      <button type="button" class="cancel" id="cancel-talk" hidden>✕ रद्द करो · Cancel</button>
-      <button type="button" class="link-button" id="talk-type-link" hidden>Type instead</button>
+      <button type="button" class="cancel" id="cancel-talk" data-tb="cancel" hidden>रद्द करो · Cancel</button>
+      <button type="button" class="link-button" id="talk-type-link" data-tb="type_instead" hidden>Type instead</button>
     </div>
 
     <!-- Giving up is allowed, but Samjhao first asks for one more try. -->
     <button type="button" class="give-up" id="give-up" hidden>मुझे नहीं पता</button>
 
     <form class="typed" id="talk-form" hidden>
-      <label for="talk-input" id="talk-label">Type your answer</label>
+      <label for="talk-input" id="talk-label" data-tb="type_answer">Type your answer</label>
       <textarea id="talk-input" rows="4" maxlength="3000"></textarea>
-      <button type="submit" class="send wide">Send</button>
+      <button type="submit" class="send wide" data-tb="send">Send</button>
     </form>
 
     <!-- Always there: go straight to the full explanation. -->
@@ -169,19 +178,19 @@
       <figure class="diagram" id="diagram" hidden>
         <img id="diagram-image" alt="">
         <figcaption id="diagram-caption"></figcaption>
-        <p class="diagram-note">Samjhao ने यह diagram खुद बनाया है, इसमें छोटी गलती हो सकती है। · Drawn by Samjhao; it may not be exact.</p>
+        <p class="diagram-note" data-tb="diagram_note">Drawn by Samjhao; it may not be exact.</p>
       </figure>
       <p class="video-soon" id="video-soon"></p>
     </section>
 
-    <h2 class="points-title">तुमने क्या समझाया · What you explained</h2>
+    <h2 class="points-title" data-tb="points_title">What you explained</h2>
     <ul class="points" id="points"></ul>
     <p class="legend">
-      <span class="mark green" aria-hidden="true">✓</span> You explained it on your own
+      <span class="mark green" aria-hidden="true">✓</span> <span data-tb="legend_green">You explained it on your own</span>
       <br>
-      <span class="mark amber" aria-hidden="true">●</span> Needed a hint, or Samjhao explained it
+      <span class="mark amber" aria-hidden="true">●</span> <span data-tb="legend_amber">Needed a hint, or Samjhao explained it</span>
       <br>
-      <span class="mark skipped" aria-hidden="true">–</span> We did not get to this one
+      <span class="mark skipped" aria-hidden="true">–</span> <span data-tb="legend_skipped">We did not get to this one</span>
     </p>
     <button type="button" class="send wide" id="new-topic">नया topic</button>
   </main>
@@ -190,6 +199,7 @@
     <p class="noscript">Samjhao needs JavaScript to listen and reply. Please turn it on in your browser.</p>
   </noscript>
 
+  <script src="i18n.js"></script>
   <script src="api.js"></script>
   <script src="audio.js"></script>
   <script src="app.js"></script>

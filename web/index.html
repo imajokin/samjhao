@@ -31,9 +31,15 @@
 
     <!-- What Samjhao is, in one line, before anything is asked. -->
     <section class="pitch">
-      <p class="pitch-hi" lang="hi">समझ आया है, या सिर्फ़ याद है? किसी को समझाकर देखो, तुरंत पता चल जाएगा।</p>
-      <p class="pitch-en" lang="en">Did you really understand it, or only memorise it? Explain it to someone and you will know.</p>
+      <p class="pitch-hi" lang="hi">समझ आया है, या सिर्फ़ याद है? Samjhao को समझाकर देखो, तुरंत पता चल जाएगा।</p>
+      <p class="pitch-en" lang="en">Did you really understand it, or just memorise it? Explain it to Samjhao and you will know.</p>
     </section>
+
+    <fieldset class="voice" id="voice-picker" hidden>
+      <legend>Samjhao's voice</legend>
+      <label><input type="radio" name="voice" value="male" checked> <span>Male</span></label>
+      <label><input type="radio" name="voice" value="female"> <span>Female</span></label>
+    </fieldset>
 
     <!-- Class is chosen here, once, so Samjhao never has to ask for it. -->
     <fieldset class="classes" id="class-picker">
@@ -72,18 +78,19 @@
       <button type="submit" class="send wide">Start</button>
     </form>
 
-    <fieldset class="voice" id="voice-picker" hidden>
-      <legend>Samjhao's voice</legend>
-      <label><input type="radio" name="voice" value="male" checked> <span>Male</span></label>
-      <label><input type="radio" name="voice" value="female"> <span>Female</span></label>
-    </fieldset>
-
     <section class="examples" id="examples" aria-label="Example topics">
       <p class="examples-title">Not sure? Try one of these:</p>
       <div class="chips">
         <button class="chip" type="button" disabled>Newton's third law</button>
-        <button class="chip" type="button" disabled>Compound interest</button>
+        <button class="chip" type="button" disabled>Photosynthesis</button>
         <button class="chip" type="button" disabled>Why the moon has phases</button>
+        <button class="chip" type="button" disabled>Compound interest</button>
+        <button class="chip" type="button" disabled>Pythagoras theorem</button>
+        <button class="chip" type="button" disabled>The water cycle</button>
+        <button class="chip" type="button" disabled>What is democracy</button>
+        <button class="chip" type="button" disabled>Supply and demand</button>
+        <button class="chip" type="button" disabled>Why ice floats on water</button>
+        <button class="chip" type="button" disabled>Ohm's law</button>
       </div>
     </section>
 
@@ -106,7 +113,7 @@
       <h1>Samjhao</h1>
     </header>
 
-    <div class="progress" id="progress" aria-label="Progress" hidden></div>
+    <p class="question-label" id="question-label" hidden></p>
 
     <p class="tutor-text" id="tutor-text" aria-live="polite"></p>
     <p class="thinking" id="thinking" hidden></p>
@@ -137,6 +144,9 @@
       <button type="submit" class="send wide">Send</button>
     </form>
 
+    <!-- Always there: go straight to the full explanation. -->
+    <button type="button" class="jump" id="jump" hidden>सीधे पूरा explanation दिखाओ</button>
+
     <button type="button" class="link-button" id="start-over">New topic</button>
   </main>
 
@@ -146,11 +156,29 @@
       <h1>Samjhao</h1>
     </header>
     <p class="tutor-text" id="summary-text"></p>
+
+    <!-- The full explanation with a diagram. Filled in after the summary appears. -->
+    <section class="recap" id="recap">
+      <h2 id="recap-title">पूरा explanation</h2>
+      <p class="thinking" id="recap-loading"></p>
+      <p class="recap-text" id="recap-text" hidden></p>
+      <button type="button" class="rerecord" id="recap-listen" hidden>🔊 सुनो</button>
+      <figure class="diagram" id="diagram" hidden>
+        <img id="diagram-image" alt="">
+        <figcaption id="diagram-caption"></figcaption>
+        <p class="diagram-note">Samjhao ने यह diagram खुद बनाया है, इसमें छोटी गलती हो सकती है। · Drawn by Samjhao; it may not be exact.</p>
+      </figure>
+      <p class="video-soon" id="video-soon"></p>
+    </section>
+
+    <h2 class="points-title">तुमने क्या समझाया · What you explained</h2>
     <ul class="points" id="points"></ul>
     <p class="legend">
       <span class="mark green" aria-hidden="true">✓</span> You explained it on your own
       <br>
       <span class="mark amber" aria-hidden="true">●</span> Needed a hint, or Samjhao explained it
+      <br>
+      <span class="mark skipped" aria-hidden="true">–</span> We did not get to this one
     </p>
     <button type="button" class="send wide" id="new-topic">नया topic</button>
   </main>

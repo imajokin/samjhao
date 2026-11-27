@@ -47,11 +47,19 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Live link: https://samjhao.14061406.xyz, served by a separate copy on Shubham's Mac Mini through its own Cloudflare tunnel (not the office tunnel), open to everyone with no login. The Mini stays on until 2 Dec. | Shubham's decisions on 27 Nov. |
 | 27 Nov 2026 | The live copy has its own OpenRouter key, the developer viewer off, and a cap of 100 paid model calls a day. | Shubham's decisions; keeps public use from draining the testing key and the bill inside the budget. |
 | 27 Nov 2026 | The live link is up at https://samjhao.14061406.xyz. It runs from ~/Projects/samjhao-live on the Mac Mini (port 8017, Colima), through a Cloudflare tunnel named "samjhao" with its settings in ~/.cloudflared/samjhao.yml. The tunnel and Colima start by themselves at login; the container restarts by itself. The address is written into app/config.py and the README. | Set up with Shubham on 27 Nov. To update the live copy: on the Mini, in that folder, git pull and docker compose up -d --build. |
+| 27 Nov 2026 | Samjhao asks about at most three points in a session, tells the learner how many questions there are in its first question, shows "Question 2 of 3" on screen, and says when the questions are over. Points it did not get to are shown in grey as "not discussed". | Shubham on 27 Nov: the learner must know when the final explanation is coming and why they are being asked questions. |
+| 27 Nov 2026 | A "show me the full explanation" button is always there during a session. It ends the questions at once; points not yet explained get no credit. | Shubham: a learner who wants to get to the point must be able to. |
+| 27 Nov 2026 | The summary screen now starts with the full explanation (four to six sentences in the learner's language, with a listen button) and a diagram drawn by the model for any topic. The diagram is restricted to plain shapes and text, is shown only as an image, and carries a note that it may not be exact. Not in the original handover. | Shubham asked for diagrams in the final explanation for every topic. Tested on four topics: three good, one (Pythagoras) drawn incompletely. |
+| 27 Nov 2026 | A line on the summary says a hand-picked video for the learner's class will be added later. Finding real YouTube videos is left for a later version. | Shubham's decision. |
+| 27 Nov 2026 | Home screen: the voice choice sits above the class choice, there are ten example topics across subjects, and the headline says "Explain it to Samjhao". | Shubham's requests. |
+| 27 Nov 2026 | The live link was opened by Shubham in Chrome on an iPhone and worked; the reply speed is acceptable to him. | His test on 27 Nov. |
 
 ## Open (waiting for Shubham)
 
 - Video link: to go into app/config.py and README.md once the video exists.
-- A test of the live link on a real Android phone on mobile data.
+- A test of the live link on a real Android phone (it worked on an iPhone).
+- Sarvam has no spending limit except its balance (about 3,455 credits on 27 Nov). Proposed: lower the live daily request cap to 600 and limit spoken replies to 600 characters.
+- Changes since commit 9668a79 are on the laptop only, by Shubham's instruction. Push to GitHub and update the live copy when he says.
 - Three learners finishing a session unaided before the demo is recorded (reviewer's item 6).
 - Sarvam: what balance or limit protects that key. The OpenRouter key has a $10 limit (checked 27 Nov: $2.56 used).
 - Native-speaker check of the Punjabi, Telugu and Kannada phrases (Shubham is arranging it).

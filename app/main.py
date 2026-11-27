@@ -185,6 +185,49 @@ def create_app(settings: Settings | None = None, judge=None) -> FastAPI:
         finally:
             sessions.end_turn(session.id)
 
+    @app.post("/api/session/{session_id}/finish")
+    def session_finish(session_id: str, request: Request):
+        """The learner asked to jump straight to the full explanation."""
+        if not settings.judging:
+            return keys_not_set(["OPENROUTER_API_KEY"])
+        if (stop := blocked(request)) is not None:
+            return stop
+        session = sessions.get(session_id)
+        if session is None:
+            return error(404, "session_not_found")
+        if not sessions.begin_turn(session.id):
+            return error(409, "busy")
+        try:
+            reply = tutor.finish_now(session)
+            if reply.get("action") == "done" and not settings.dev_viewer:
+                sessions.forget_words(session)
+            return reply
+        finally:
+            sessions.end_turn(session.id)
+
+    @app.get("/api/session/{session_id}/recap")
+    def session_recap(session_id: str, request: Request):
+        """The full explanation and a diagram, once the session has finished."""
+        if not settings.judging:
+            return keys_not_set(["OPENROUTER_API_KEY"])
+        session = sessions.get(session_id)
+        if session is None:
+            return error(404, "session_not_found")
+        if session.phase != "summary":
+            return error(409, "session_not_finished")
+        if session.recap is None:
+            if (stop := blocked(request)) is not None:
+                return stop
+            if not sessions.begin_turn(session.id):
+                return error(409, "busy")
+            try:
+                session.recap = tutor.judge.write_recap(session)
+            except ServiceDown as problem:
+                return service_down(problem, session.lang, session.voice)
+            finally:
+                sessions.end_turn(session.id)
+        return {"lang": session.lang, **session.recap}
+
     @app.get("/api/session/{session_id}/summary")
     def session_summary(session_id: str):
         session = sessions.get(session_id)

@@ -56,6 +56,16 @@ const Api = {
     });
   },
 
+  // The learner asked to jump straight to the full explanation.
+  finish(sessionId) {
+    return Api.send("POST", "/api/session/" + sessionId + "/finish", {});
+  },
+
+  // The full explanation and diagram, once the session has finished.
+  recap(sessionId) {
+    return Api.send("GET", "/api/session/" + sessionId + "/recap");
+  },
+
   // One piece of recorded audio -> {transcript, language_code}
   transcribe(blob) {
     return Api.send("POST", "/api/transcribe", blob);

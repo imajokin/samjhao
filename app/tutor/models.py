@@ -6,6 +6,7 @@ from typing import Protocol
 # Result colours on the summary screen.
 GREEN = "green"  # the learner explained it without a hint
 AMBER = "amber"  # a hint was given, or the app explained it
+SKIPPED = "skipped"  # not discussed: the question limit was reached, or the learner jumped ahead
 
 
 @dataclass
@@ -91,6 +92,9 @@ class Session:
     not_heard_count: int = 0
     word_checks: int = 0  # times we asked "did you say X or Y?"
     held_words: str = ""  # the answer waiting for that word to be settled
+    questions_total: int = 0  # how many points we will ask about (told to the learner)
+    questions_asked: int = 0  # how many we have asked about so far
+    recap: dict | None = None  # the full explanation and diagram, once written
     history: list[tuple[str, str]] = field(default_factory=list)  # (who, text)
     notes: list[dict] = field(default_factory=list)  # for the developer's viewer
 
@@ -101,6 +105,9 @@ class Session:
         return {
             "done": sum(1 for p in self.points if p.closed),
             "total": len(self.points),
+            # "Question 2 of 3", so the learner knows how much is left.
+            "question": self.questions_asked,
+            "questions": self.questions_total,
         }
 
     def summary(self) -> dict:
@@ -127,4 +134,8 @@ class Judge(Protocol):
 
     def write_support(self, session: Session, point: KeyPoint) -> None:
         """Fills the point's question, hints and explanation in session.lang."""
+        ...
+
+    def write_recap(self, session: Session) -> dict:
+        """The full explanation and a diagram for the summary screen."""
         ...

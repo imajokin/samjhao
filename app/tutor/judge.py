@@ -4,6 +4,8 @@ All judging is done by the language model. There is no rule-based judge.
 This file only fills in the prompts and tidies the answers into our shapes.
 """
 
+import re
+
 from app.tutor import prompts
 from app.tutor.language import PROMPT_NAMES
 from app.tutor.models import Judgement, KeyPoint, Session, TopicPlan
@@ -78,6 +80,9 @@ class LLMJudge:
             hints_given=(
                 " | ".join(asked.hints) if asked and asked.hints else "none yet"
             ),
+            questions_total=session.questions_total or "3",
+            questions_asked=session.questions_asked,
+            questions_note=_questions_note(session),
             transcript=transcript,
             language_rules=prompts.LANGUAGE_RULES,
         )
@@ -126,3 +131,68 @@ class LLMJudge:
         point.hint = str(answer.get("hint") or "").strip()
         point.hint2 = str(answer.get("hint2") or "").strip()
         point.explanation = str(answer.get("explanation") or "").strip() or point.explanation
+
+    def write_recap(self, session: Session) -> dict:
+        lines = []
+        for point in session.points:
+            how = {
+                "green": "explained it alone",
+                "amber": "needed a hint or had it explained",
+                "skipped": "was not asked about it",
+            }.get(point.result or "", "did not reach it")
+            lines.append(f"{point.id}. {point.statement} (the learner {how})")
+        prompt = prompts.RECAP_PROMPT.format(
+            topic=session.topic,
+            level=session.level or "not given",
+            key_points="\n".join(lines),
+            language=PROMPT_NAMES.get(session.lang, "Hindi mixed with English"),
+            language_rules=prompts.LANGUAGE_RULES,
+        )
+        # Writing, not judging: the lightest thinking level keeps the wait short.
+        answer = self.llm.ask_json(prompt, prompts.RECAP_SCHEMA, "recap", light=True)
+        return {
+            "explanation": str(answer.get("explanation") or "").strip(),
+            "diagram_caption": str(answer.get("diagram_caption") or "").strip(),
+            "svg": safe_svg(str(answer.get("svg") or "")),
+        }
+
+
+def _questions_note(session: Session) -> str:
+    """Tells the model where the learner is in the session."""
+    total = session.questions_total
+    asked = session.questions_asked
+    if not total:
+        return (
+            "This is the first explanation: count the points that are not covered, "
+            "and you will ask about that many, but never more than 3."
+        )
+    if asked >= total:
+        return "You have asked about the maximum number of points. Ask about no new point."
+    if asked == total - 1:
+        return "The next point you ask about is the LAST one."
+    return f"You may ask about {total - asked} more."
+
+
+_SVG_ALLOWED = {
+    "svg", "g", "rect", "circle", "ellipse", "line", "polyline", "polygon",
+    "path", "text", "tspan", "defs", "marker", "title",
+}
+
+
+def safe_svg(svg: str) -> str:
+    """The diagram, or an empty string if it contains anything beyond plain
+    shapes and text. The page also shows it only as an image, never as code."""
+    svg = svg.strip()
+    start, end = svg.find("<svg"), svg.rfind("</svg>")
+    if start < 0 or end < 0:
+        return ""
+    svg = svg[start : end + len("</svg>")]
+    if len(svg) > 30000:
+        return ""
+    lowered = svg.lower()
+    if re.search(r"\bon[a-z]+\s*=|javascript:|<!|<\?|href\s*=|url\(\s*['\"]?\s*(?!#)", lowered):
+        return ""
+    for tag in re.findall(r"<\s*/?\s*([a-zA-Z][\w:-]*)", svg):
+        if tag not in _SVG_ALLOWED:
+            return ""
+    return svg

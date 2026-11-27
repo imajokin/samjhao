@@ -90,6 +90,8 @@ class Settings:
         page_keys = (
             "thinking_writing", "thinking_topic", "thinking_question", "thinking_hint",
             "new_topic_button", "rerecord_button", "not_heard", "give_up_button",
+            "jump_button", "question_label", "recap_title", "recap_loading",
+            "video_soon", "listen_button",
         )
         phrases = {
             lang: {key: STRINGS[key][lang] for key in page_keys} for lang in LANGUAGES

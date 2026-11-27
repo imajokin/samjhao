@@ -582,3 +582,85 @@ body {
   padding: 10px 20px;
   cursor: pointer;
 }
+
+/* ----- Where the learner is, and the way out ----- */
+
+.question-label {
+  margin: 10px 0 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.jump {
+  font: inherit;
+  font-weight: 600;
+  margin: 10px 0 4px;
+  background: #ffffff;
+  color: var(--brand);
+  border: 2px solid var(--brand);
+  border-radius: 999px;
+  padding: 10px 18px;
+  cursor: pointer;
+}
+
+/* ----- The full explanation and its diagram ----- */
+
+.recap {
+  width: 100%;
+  text-align: left;
+  background: #ffffff;
+  border: 2px solid var(--brand);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 6px 0 20px;
+}
+
+.recap h2, .points-title {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  color: var(--brand);
+}
+
+.points-title { width: 100%; text-align: left; }
+
+.recap-text {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.diagram { margin: 14px 0 6px; }
+
+.diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.diagram figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.video-soon {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 2px solid var(--line);
+  color: var(--muted);
+}
+
+.mark.skipped { background: #7a7a85; }
+
+.diagram-note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}

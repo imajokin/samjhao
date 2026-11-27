@@ -25,11 +25,12 @@ from app.tutor.language import (
     quote_is_from,
     word_count,
 )
-from app.tutor.models import AMBER, GREEN, Judge, Judgement, KeyPoint, Session
+from app.tutor.models import AMBER, GREEN, SKIPPED, Judge, Judgement, KeyPoint, Session
 from app.tutor.strings import say
 
 MIN_FIRST_EXPLANATION_WORDS = 5
 MAX_HINTS = 2  # hints per key point before the app explains it
+MAX_QUESTIONS = 3  # points we ask about in one session, so it never drags on
 HISTORY_FOR_START = 8  # earlier lines shown to the model while the topic is settled
 MAX_WORD_CHECKS = 2  # times per session we may ask "did you say X or Y?"
 MAX_CLARIFIES = 2  # times per point the learner may ask us something for free
@@ -222,6 +223,16 @@ class Tutor:
         reply["action"] = "app_explains"
         return reply
 
+    def finish_now(self, session: Session) -> dict:
+        """The learner asked to jump straight to the full explanation."""
+        if session.phase not in ("explain", "follow_up", "summary") or not session.points:
+            return self._reply(session, "narrow_topic", _say(session, "home_open"))
+        if session.phase == "summary":
+            reply = self._reply(session, "done", "")
+            reply["summary"] = session.summary()
+            return reply
+        return self._finish(session, _say(session, "jump_to_explanation"))
+
     def _setup_turn(self, session: Session, transcript: str) -> dict:
         """Turns before the explanation starts: the learner is still telling
         us what they want to explain, or answering a question about it."""
@@ -270,8 +281,15 @@ class Tutor:
                 point.result = AMBER if point.hints else GREEN
 
     def _pick_gap(self, session: Session) -> KeyPoint | None:
-        """A point the learner got wrong comes before one they skipped."""
+        """A point the learner got wrong comes before one they skipped. At most
+        MAX_QUESTIONS points are asked about; the rest are left for the full
+        explanation at the end."""
         open_points = [p for p in session.points if not p.closed]
+        if not session.questions_total:
+            # Decided once, after the first explanation, and told to the learner.
+            session.questions_total = min(len(open_points), MAX_QUESTIONS)
+        if session.questions_asked >= MAX_QUESTIONS:
+            return None
         wrong = [p for p in open_points if p.last_status == "wrong"]
         return (wrong or open_points or [None])[0]
 
@@ -288,6 +306,7 @@ class Tutor:
     ) -> dict:
         """Asks about the next open point."""
         session.current_id = gap.id
+        session.questions_asked += 1
         if written:
             session.last_question = judgement.question or written
             return self._reply(session, "follow_up", written, judgement)
@@ -338,6 +357,9 @@ class Tutor:
     ) -> dict:
         session.phase = "summary"
         session.current_id = None
+        for point in session.points:
+            if not point.closed:
+                point.result = SKIPPED  # never asked about: no credit, no blame
         all_green = all(p.result == GREEN for p in session.points)
         closing = _say(session, "done" if all_green else "done_with_help")
         reply = self._reply(session, "done", written or _join(lead, closing), judgement)

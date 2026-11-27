@@ -36,8 +36,11 @@ class OpenRouter:
                 raise DailyCap()
             self._calls_today += 1
 
-    def ask_json(self, prompt: str, schema: dict, name: str) -> dict:
-        """The model's answer as a dictionary that matches `schema`."""
+    def ask_json(self, prompt: str, schema: dict, name: str, light: bool = False) -> dict:
+        """The model's answer as a dictionary that matches `schema`.
+
+        `light` asks for the lightest thinking level. It is used for writing
+        tasks where nothing is being judged, to keep the wait short."""
         body = {
             "model": self.settings.llm_model,
             "messages": [{"role": "user", "content": prompt}],
@@ -47,7 +50,7 @@ class OpenRouter:
                 "json_schema": {"name": name, "strict": True, "schema": schema},
             },
         }
-        if not self.settings.llm_thinking:
+        if light or not self.settings.llm_thinking:
             # The model thinks before answering. Some models do not allow
             # thinking to be switched off, so "off" asks for the lightest level.
             body["reasoning"] = {"effort": "low"}

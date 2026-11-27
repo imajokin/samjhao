@@ -344,21 +344,17 @@ function setBusy(busy, kind) {
   setMic(busy ? "busy" : "idle");
 }
 
+// "Question 2 of 3": the learner always knows how much is left.
 function showProgress(progress) {
-  const row = byId("progress");
-  row.textContent = "";
-  if (!progress || !progress.total) {
-    row.hidden = true;
+  const label = byId("question-label");
+  if (!progress || !progress.questions || !progress.question) {
+    label.hidden = true;
     return;
   }
-  // Dots only: how many points are done, never what they are.
-  for (let i = 0; i < progress.total; i += 1) {
-    const dot = document.createElement("span");
-    dot.className = i < progress.done ? "dot done" : "dot";
-    row.appendChild(dot);
-  }
-  row.setAttribute("aria-label", progress.done + " of " + progress.total + " points done");
-  row.hidden = false;
+  label.textContent = phrase("question_label", "सवाल {n} / {total}")
+    .replace("{n}", progress.question)
+    .replace("{total}", progress.questions);
+  label.hidden = false;
 }
 
 function showHeard(text, spoken) {
@@ -398,12 +394,32 @@ async function giveUp() {
   showReply(reply.data);
 }
 
+// The learner wants the full explanation now, without more questions.
+async function jumpToExplanation() {
+  if (!state.sessionId || state.busy) return;
+  if (Recorder.active) Recorder.cancel();
+  Player.unlock();
+  Player.stop();
+  setBusy(true, "topic");
+  const reply = await Api.finish(state.sessionId);
+  setBusy(false);
+  if (!reply.ok) {
+    showProblem(reply);
+    return;
+  }
+  showReply(reply.data);
+}
+
 function showReply(data) {
   state.lang = data.lang || state.lang;
   // The give-up button only makes sense while a question is open.
   const asking = ["follow_up", "hint", "app_explains", "off_topic"].includes(data.action);
   byId("give-up").hidden = !asking;
   byId("give-up").textContent = phrase("give_up_button", "मुझे नहीं पता");
+  // Jumping to the full explanation is possible once the topic is settled.
+  const inSession = asking || data.action === "start_explain" || data.action === "confirm_word";
+  byId("jump").hidden = !inSession;
+  byId("jump").textContent = phrase("jump_button", "सीधे पूरा explanation दिखाओ");
   if (data.action === "show_text_box") showTextBox(false);
   if (data.action === "done") {
     showSummary(data);
@@ -422,6 +438,7 @@ async function beginTopic(topicText, languageCode, spoken) {
   state.lang = guessLanguage(text) || "hinglish";
   byId("tutor-text").textContent = "";
   byId("give-up").hidden = true;
+  byId("jump").hidden = true;
   showHeard(text, false);
   showProgress(null);
   show("talk");
@@ -463,13 +480,18 @@ function showSummary(data) {
   byId("summary-text").textContent = data.text;
   const list = byId("points");
   list.textContent = "";
+  const marks = {
+    green: ["mark green", "✓", "Explained on your own"],
+    amber: ["mark amber", "●", "Needed help"],
+    skipped: ["mark skipped", "–", "Not discussed"],
+  };
   for (const point of (data.summary && data.summary.points) || []) {
     const item = document.createElement("li");
     const mark = document.createElement("span");
-    const green = point.result === "green";
-    mark.className = green ? "mark green" : "mark amber";
-    mark.textContent = green ? "✓" : "●";
-    mark.setAttribute("aria-label", green ? "Explained on your own" : "Needed help");
+    const [className, symbol, label] = marks[point.result] || marks.amber;
+    mark.className = className;
+    mark.textContent = symbol;
+    mark.setAttribute("aria-label", label);
     const text = document.createElement("span");
     text.textContent = point.statement;
     item.appendChild(mark);
@@ -478,6 +500,46 @@ function showSummary(data) {
   }
   byId("new-topic").textContent = phrase("new_topic_button", "नया topic");
   show("summary");
+  loadRecap(state.sessionId);
+}
+
+// The full explanation and its diagram arrive a few seconds after the summary.
+async function loadRecap(sessionId) {
+  byId("recap-title").textContent = phrase("recap_title", "पूरा explanation");
+  byId("recap-loading").textContent = phrase("recap_loading", "पूरा explanation बना रहा हूँ…");
+  byId("recap-loading").hidden = false;
+  byId("recap-text").hidden = true;
+  byId("recap-listen").hidden = true;
+  byId("diagram").hidden = true;
+  byId("video-soon").textContent = phrase("video_soon", "Video जल्द जोड़ा जाएगा।");
+  if (!sessionId) {
+    byId("recap-loading").hidden = true;
+    return;
+  }
+  const reply = await Api.recap(sessionId);
+  if (state.sessionId !== sessionId) return; // the learner has moved on
+  byId("recap-loading").hidden = true;
+  if (!reply.ok || !reply.data.explanation) {
+    byId("recap-text").textContent = TEXT.serviceDown;
+    byId("recap-text").hidden = false;
+    return;
+  }
+  const recap = reply.data;
+  byId("recap-text").textContent = recap.explanation;
+  byId("recap-text").hidden = false;
+  if (state.config && state.config.speech) {
+    const listen = byId("recap-listen");
+    listen.textContent = "🔊 " + phrase("listen_button", "सुनो");
+    listen.onclick = () => speak(recap.explanation);
+    listen.hidden = false;
+  }
+  if (recap.svg) {
+    // Shown as a picture, never run as code.
+    byId("diagram-image").src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(recap.svg);
+    byId("diagram-image").alt = recap.diagram_caption || "Diagram";
+    byId("diagram-caption").textContent = recap.diagram_caption || "";
+    byId("diagram").hidden = false;
+  }
 }
 
 function backHome() {
@@ -508,6 +570,7 @@ byId("talk-form").addEventListener("submit", (event) => {
 });
 
 byId("give-up").addEventListener("click", giveUp);
+byId("jump").addEventListener("click", jumpToExplanation);
 byId("cancel-home").addEventListener("click", () => Recorder.cancel());
 byId("cancel-talk").addEventListener("click", () => Recorder.cancel());
 byId("class-picker").addEventListener("change", () => {

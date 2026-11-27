@@ -32,6 +32,10 @@ class FakeJudge:
         ]
         return TopicPlan("ok", "Day and night", "Class 8", key_points=points)
 
+    def write_recap(self, session):
+        return {"explanation": "The whole idea.", "diagram_caption": "A picture.",
+                "svg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'></svg>"}
+
     def write_support(self, session, point):
         self.support_calls = getattr(self, "support_calls", 0) + 1
 
@@ -62,7 +66,8 @@ class SessionRoutes(unittest.TestCase):
         turn = api.post(f"/api/session/{sid}/turn", json={"transcript": LONG}).json()
         self.assertEqual(turn["action"], "follow_up")
         self.assertEqual(turn["text"], "How long?")
-        self.assertEqual(turn["progress"], {"done": 1, "total": 2})
+        self.assertEqual((turn["progress"]["done"], turn["progress"]["total"]), (1, 2))
+        self.assertEqual((turn["progress"]["question"], turn["progress"]["questions"]), (1, 1))
         self.assertNotIn("summary", turn)
 
         # The key points stay hidden until the end.
@@ -196,6 +201,36 @@ class Safeguards(unittest.TestCase):
         session.history.append(("learner", "later"))
         store.rewind(session)  # nothing kept to go back to
         self.assertEqual(session.history, [("learner", "later")])
+
+
+class FullExplanation(unittest.TestCase):
+    def test_recap_is_only_given_after_the_session_ends(self):
+        api = client()
+        sid = api.post("/api/session/start", json={"topic_text": "Day and night, Class 8"}).json()["session_id"]
+        self.assertEqual(api.get(f"/api/session/{sid}/recap").status_code, 409)
+        api.post(f"/api/session/{sid}/turn", json={"transcript": LONG})
+        done = api.post(f"/api/session/{sid}/finish").json()
+        self.assertEqual(done["action"], "done")
+        self.assertEqual([p["result"] for p in done["summary"]["points"]], ["green", "skipped"])
+        recap = api.get(f"/api/session/{sid}/recap").json()
+        self.assertEqual(recap["explanation"], "The whole idea.")
+        self.assertTrue(recap["svg"].startswith("<svg"))
+
+    def test_unsafe_diagrams_are_dropped(self):
+        from app.tutor.judge import safe_svg
+
+        good = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#fff"/><text x="10" y="20">Sun</text></svg>'
+        self.assertEqual(safe_svg("```svg\n" + good + "\n```"), good)
+        for bad in (
+            '<svg><script>alert(1)</script></svg>',
+            '<svg><rect onclick="x()"/></svg>',
+            '<svg><image href="http://x/y.png"/></svg>',
+            '<svg><a href="http://x"><text>t</text></a></svg>',
+            '<svg><foreignObject><div>x</div></foreignObject></svg>',
+            '<svg><rect fill="url(http://x)"/></svg>',
+            'not a diagram',
+        ):
+            self.assertEqual(safe_svg(bad), "", bad)
 
 
 class DeveloperViewer(unittest.TestCase):

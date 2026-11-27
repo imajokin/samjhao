@@ -7,7 +7,7 @@ Run with:  python -m unittest discover -s tests -v
 import unittest
 
 from app.tutor.engine import GAVE_UP, Tutor, new_session
-from app.tutor.models import AMBER, GREEN, Judgement, KeyPoint, TopicPlan
+from app.tutor.models import AMBER, GREEN, SKIPPED, Judgement, KeyPoint, TopicPlan
 
 LONG = "the moon goes around the earth and we see its lit half"
 
@@ -38,6 +38,10 @@ class FakeJudge:
         self.plan_calls.append((topic, level, confirmed))
         self.conversations.append(conversation)
         return self.plans.pop(0)
+
+    def write_recap(self, session):
+        return {"explanation": "The whole idea.", "diagram_caption": "A picture.",
+                "svg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'></svg>"}
 
     def write_support(self, session, point):
         self.support_calls += 1
@@ -84,7 +88,7 @@ class CoreFlow(unittest.TestCase):
         self.assertEqual(reply["action"], "done")
         self.assertEqual(reply["text"], "Lovely, all clear.")
         self.assertEqual(results(session), [GREEN, GREEN, GREEN])
-        self.assertEqual(reply["progress"], {"done": 3, "total": 3})
+        self.assertEqual((reply["progress"]["done"], reply["progress"]["total"]), (3, 3))
         self.assertEqual(len(reply["summary"]["points"]), 3)
 
     def test_the_models_own_reply_is_spoken_when_it_follows_the_rules(self):
@@ -300,6 +304,51 @@ class Evidence(unittest.TestCase):
         self.assertEqual(tutor.turn(session, "son")["action"], "follow_up")
 
 
+class KnowingWhereYouAre(unittest.TestCase):
+    """The learner is told how many questions there are, and can jump ahead."""
+
+    def test_question_count_is_fixed_after_the_first_explanation(self):
+        tutor, session = started([ask((1,), 2)])
+        reply = tutor.turn(session, LONG)
+        self.assertEqual((reply["progress"]["question"], reply["progress"]["questions"]), (1, 2))
+
+    def test_never_more_than_three_questions(self):
+        points = moon_points() + [
+            KeyPoint(4, "Fourth.", question="Q4?", hint="H4.", hint2="H4b.", explanation="E4."),
+            KeyPoint(5, "Fifth.", question="Q5?", hint="H5.", hint2="H5b.", explanation="E5."),
+        ]
+        def v(covered, move, about, reply="R?"):
+            statuses = {i: ("covered" if i in covered else "missing") for i in range(1, 6)}
+            return Judgement(statuses, move=move, about_id=about, reply=reply, question=reply)
+        judge = FakeJudge(
+            plans=[TopicPlan("ok", "Five", "Class 8", key_points=points)],
+            turns=[v((), "ask", 1), v((1,), "ask", 2), v((1, 2), "ask", 3), v((1, 2, 3), "done", None, "All done.")],
+        )
+        tutor, session = Tutor(judge), new_session()
+        tutor.start(session, "Five things", "Class 8")
+        first = tutor.turn(session, LONG)
+        self.assertEqual(first["progress"]["questions"], 3)
+        tutor.turn(session, "one")
+        tutor.turn(session, "two")
+        last = tutor.turn(session, "three")
+        self.assertEqual(last["action"], "done")  # points 4 and 5 are not asked about
+        self.assertEqual([p.result for p in session.points], [GREEN, GREEN, GREEN, SKIPPED, SKIPPED])
+
+    def test_jumping_to_the_explanation_ends_the_session_at_once(self):
+        tutor, session = started([ask((1,), 2)])
+        tutor.turn(session, LONG)
+        reply = tutor.finish_now(session)
+        self.assertEqual(reply["action"], "done")
+        self.assertEqual(results(session), [GREEN, SKIPPED, SKIPPED])
+        self.assertEqual(len(reply["summary"]["points"]), 3)
+
+    def test_jumping_before_explaining_gives_no_credit(self):
+        tutor, session = started([])
+        reply = tutor.finish_now(session)
+        self.assertEqual(reply["action"], "done")
+        self.assertEqual(results(session), [SKIPPED, SKIPPED, SKIPPED])
+
+
 class GapOrder(unittest.TestCase):
     def test_a_wrong_point_is_asked_before_a_skipped_one(self):
         tutor, session = started([
@@ -448,7 +497,7 @@ class StartingATopic(unittest.TestCase):
         # No "now explain it" turn: the first reply is already the question.
         self.assertEqual(reply["action"], "follow_up")
         self.assertEqual(reply["text"], "Q?")
-        self.assertEqual(reply["progress"], {"done": 2, "total": 3})
+        self.assertEqual((reply["progress"]["done"], reply["progress"]["total"]), (2, 3))
 
     def test_class_from_the_home_screen_is_passed_on(self):
         judge = FakeJudge()

@@ -112,6 +112,7 @@ The conversation so far:
 
 The key point you last asked about: {asked_about}
 Hints you have already given for that point: {hints_given}
+Questions: in this whole session you ask about at most {questions_total} key points. So far you have asked about {questions_asked}. {questions_note}
 
 The learner's latest words (a speech transcript, so spelling may be rough, and the recording may have stopped in the middle of a sentence):
 \"\"\"{transcript}\"\"\"
@@ -135,14 +136,18 @@ Also report: dont_know (they said they do not know, or tapped the "I don't know"
 STEP 3. Choose your move. Follow these rules exactly, in this order:
 1. If off_topic is true: move "off_topic". Gently bring them back and ask your last question again in new words. about_point_id stays the point you last asked about.
 2. If learner_asked is true and the point you last asked about is still not covered: move "clarify". Answer what they asked, briefly and honestly, without giving away the point, then ask again in a simpler way. about_point_id stays the same.
-3. If this is the first explanation, or the point you last asked about is now covered: look at the points that are neither covered nor closed. If there are none, move "done" and about_point_id is null. Otherwise move "ask": choose the first "wrong" point in order, or if none is wrong the first "missing" point, and ask about it.
+3. If this is the first explanation, or the point you last asked about is now covered: look at the points that are neither covered nor closed. If there are none, or you have already asked about the maximum number of points, move "done" and about_point_id is null. Otherwise move "ask": choose the first "wrong" point in order, or if none is wrong the first "missing" point, and ask about it.
 4. Otherwise the point you last asked about is still not covered (they missed it, guessed, or said they do not know):
    - If you have given no hint for it yet: move "hint1". Keep about_point_id.
    - If you have given exactly one hint: move "hint2". Keep about_point_id.
-   - If you have already given two hints: move "explain". Explain that point yourself. Then, among the other points that are neither covered nor closed, choose the next one as in rule 3 and ask about it; about_point_id is that next point, or null if none is left.
+   - If you have already given two hints: move "explain". Explain that point yourself. Then, among the other points that are neither covered nor closed, choose the next one as in rule 3 and ask about it; about_point_id is that next point, or null if none is left or you have already asked about the maximum number of points.
 
 STEP 4. Write reply: exactly what you will say aloud next. It is spoken, so it must sound like a person talking.
 What each move needs:
+- The learner must always know where they are, so they are never left wondering whether to keep talking:
+  - In your very first question of the session, say in a few natural words how many short questions you have for them (see the Questions line above) and that the full explanation comes right after. Say why in half a sentence: you want to see how far their understanding goes.
+  - When you ask about the last allowed point, say that it is the last question.
+  - When the move is "done", or "explain" with no next point, say clearly that the questions are over and that the full explanation with a diagram is now on their screen.
 - ask: react to what they just said, then one question about the chosen point. If they got something right, say which thing, specifically. If the point is "wrong", make them curious about their own idea instead of telling them it is wrong.
 - hint1: a gentle hint that starts from what this learner said or seems to believe: where to look, or which part of their own explanation to think about again. Then ask again, in different and simpler words than before. If they said they do not know, make it feel easy and safe to try.
 - hint2: encourage them not to give up yet, in your own fresh words. Give a stronger hint: an everyday example or situation they have seen, in which the idea becomes visible, stopping just short of the answer. Then ask a smaller, easier question than before.
@@ -280,3 +285,39 @@ def format_key_points(points: list[dict]) -> str:
             f"(status so far: {status}; usual wrong idea: {mistake})"
         )
     return "\n".join(lines)
+
+
+# Written once, when the session ends: the complete explanation and a diagram.
+RECAP_PROMPT = """A learner has just finished explaining a concept to a tutor that listens. Now give them the complete, correct explanation to keep, and one simple diagram.
+Topic: {topic}
+Level: {level}
+The key points of a correct explanation, and how the learner did on each:
+{key_points}
+
+Write, in {language}:
+- explanation: the full explanation at this level, in 4 to 6 short, plain sentences, in the order a good teacher would say it. Cover every key point. Spend a little more on the points the learner needed help with or did not reach. Do not praise or address the learner; just explain.
+- diagram_caption: one short sentence that says what the diagram shows.
+
+Then draw the diagram as SVG, in the field svg:
+- One simple, clear, labelled picture that makes the main idea visible. A real diagram of the idea (objects, arrows, positions, a small graph or a flow of steps), not decoration and not a block of text.
+- Start with <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"> and end with </svg>.
+- Use only these elements: svg, g, rect, circle, ellipse, line, polyline, polygon, path, text, tspan, defs, marker, title.
+- No scripts, no links, no images, no foreignObject, no style element, no external references, no event attributes.
+- White or very light background rectangle. Dark, clearly visible lines (stroke-width 2 or more) and a few strong colours.
+- At most 8 short text labels (1 to 3 words each), font-size 13 or larger, font-family sans-serif, placed so that they do not overlap each other or the shapes and stay inside the picture. Write labels in English.
+- Keep it under 60 elements.
+
+Language rules for the explanation and caption:
+{language_rules}
+Return JSON only."""
+
+RECAP_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "explanation": {"type": "string"},
+        "diagram_caption": {"type": "string"},
+        "svg": {"type": "string"},
+    },
+    "required": ["explanation", "diagram_caption", "svg"],
+    "additionalProperties": False,
+}

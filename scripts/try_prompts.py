@@ -31,7 +31,6 @@ MODELS = [
     "anthropic/claude-haiku-5.5",
     "openai/gpt-6-luna",
     "openai/gpt-6.1-terra",
-    "anthropic/claude-fable-5.2",
 ]
 # Jev only gives the verdict. This model writes the key points and the question.
 JEV_MODEL = "typesafe/jev-1.14"

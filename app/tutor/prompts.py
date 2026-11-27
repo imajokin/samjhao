@@ -11,7 +11,8 @@ LANGUAGE_RULES = """Samjhao works in Hindi, English, Punjabi, Telugu and Kannada
 - Speak like a friendly older sibling, using the informal "you" of that language (in Hindi "तुम", not "आप")."""
 
 KEY_POINTS_PROMPT = """You are preparing a hidden checklist for a tutor that listens to a learner explain a concept aloud.
-What the learner said they will explain (from speech, so spelling may be rough): {topic}
+What the learner said (from speech, so spelling may be rough). It names the topic, and may already contain their explanation:
+\"\"\"{topic}\"\"\"
 Level they gave separately: {level}
 Topic already confirmed by the learner: {confirmed}
 
@@ -24,6 +25,7 @@ Decide the status first, in this order:
 - "ok" otherwise.
 
 Always fill topic_clean (the topic, tidied) and level (the class or level you found, or an empty string).
+Also fill has_explanation: true if the text already contains the learner's own explanation of the concept, more than just naming the topic or asking about it. Otherwise false.
 
 If "ok", write 3 to 5 key points that a correct explanation at this level must include, in the order a good explanation would say them.
 - Each key point is one positive idea that can be checked from speech: something a good explanation says.
@@ -48,6 +50,7 @@ KEY_POINTS_SCHEMA = {
         },
         "topic_clean": {"type": "string"},
         "level": {"type": "string"},
+        "has_explanation": {"type": "boolean"},
         "narrow_subject": {"type": "string"},
         "nearby_topic": {"type": "string"},
         "key_points": {
@@ -68,6 +71,7 @@ KEY_POINTS_SCHEMA = {
         "status",
         "topic_clean",
         "level",
+        "has_explanation",
         "narrow_subject",
         "nearby_topic",
         "key_points",

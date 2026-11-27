@@ -12,11 +12,11 @@ LANGUAGES = ("hindi", "english", "punjabi", "telugu", "kannada")
 
 STRINGS = {
     "home_open": {
-        "hindi": "आज क्या समझाओगे? Topic बोलो, और अपनी class बताओ।",
-        "english": "What will you explain today? Say the topic and your class.",
-        "punjabi": "ਅੱਜ ਕੀ ਸਮਝਾਓਗੇ? Topic ਬੋਲੋ, ਅਤੇ ਆਪਣੀ class ਦੱਸੋ।",
-        "telugu": "ఈ రోజు ఏం వివరిస్తావు? Topic చెప్పు, నీ class కూడా చెప్పు.",
-        "kannada": "ಇಂದು ಏನು ವಿವರಿಸುತ್ತೀಯ? Topic ಹೇಳು, ನಿನ್ನ class ಕೂಡ ಹೇಳು.",
+        "hindi": "कौन सा topic समझाओगे? Mic दबाओ, topic बोलो और समझाना शुरू करो।",
+        "english": "Which topic will you explain? Tap the mic, say the topic and start explaining.",
+        "punjabi": "ਕਿਹੜਾ topic ਸਮਝਾਓਗੇ? Mic ਦਬਾਓ, topic ਬੋਲੋ ਅਤੇ ਸਮਝਾਉਣਾ ਸ਼ੁਰੂ ਕਰੋ।",
+        "telugu": "ఏ topic వివరిస్తావు? Mic నొక్కి, topic చెప్పి వివరించడం మొదలుపెట్టు.",
+        "kannada": "ಯಾವ topic ವಿವರಿಸುತ್ತೀಯ? Mic ಒತ್ತಿ, topic ಹೇಳಿ ವಿವರಿಸಲು ಶುರು ಮಾಡು.",
     },
     "ask_level": {
         "hindi": "कौन सी class में हो?",
@@ -39,27 +39,13 @@ STRINGS = {
         "telugu": "నువ్వు {topic} అన్నావా?",
         "kannada": "ನೀನು {topic} ಅಂದೆಯಾ?",
     },
+    # Said only when the learner named a topic without explaining it yet.
     "start_explain": {
-        "hindi": (
-            "मुझे यह ऐसे समझाओ जैसे मैं तुम्हारा छोटा भाई हूँ। Mic दबाओ और बोलो।",
-            "मुझे यह ऐसे समझाओ जैसे मैं तुम्हारी छोटी बहन हूँ। Mic दबाओ और बोलो।",
-        ),
-        "english": (
-            "Explain this to me like I am your younger brother. Tap the mic and speak.",
-            "Explain this to me like I am your younger sister. Tap the mic and speak.",
-        ),
-        "punjabi": (
-            "ਮੈਨੂੰ ਇਹ ਇਸ ਤਰ੍ਹਾਂ ਸਮਝਾਓ ਜਿਵੇਂ ਮੈਂ ਤੁਹਾਡਾ ਛੋਟਾ ਭਰਾ ਹਾਂ। Mic ਦਬਾਓ ਅਤੇ ਬੋਲੋ।",
-            "ਮੈਨੂੰ ਇਹ ਇਸ ਤਰ੍ਹਾਂ ਸਮਝਾਓ ਜਿਵੇਂ ਮੈਂ ਤੁਹਾਡੀ ਛੋਟੀ ਭੈਣ ਹਾਂ। Mic ਦਬਾਓ ਅਤੇ ਬੋਲੋ।",
-        ),
-        "telugu": (
-            "నేను నీ తమ్ముడిని అనుకుని నాకు ఇది వివరించు. Mic నొక్కి మాట్లాడు.",
-            "నేను నీ చెల్లెలిని అనుకుని నాకు ఇది వివరించు. Mic నొక్కి మాట్లాడు.",
-        ),
-        "kannada": (
-            "ನಾನು ನಿನ್ನ ತಮ್ಮ ಎಂದುಕೊಂಡು ನನಗೆ ಇದನ್ನು ವಿವರಿಸು. Mic ಒತ್ತಿ ಮಾತಾಡು.",
-            "ನಾನು ನಿನ್ನ ತಂಗಿ ಎಂದುಕೊಂಡು ನನಗೆ ಇದನ್ನು ವಿವರಿಸು. Mic ಒತ್ತಿ ಮಾತಾಡು.",
-        ),
+        "hindi": "ठीक है। अब mic दबाओ और इसे अपने शब्दों में समझाओ।",
+        "english": "Okay. Now tap the mic and explain it in your own words.",
+        "punjabi": "ਠੀਕ ਹੈ। ਹੁਣ mic ਦਬਾਓ ਅਤੇ ਇਸਨੂੰ ਆਪਣੇ ਸ਼ਬਦਾਂ ਵਿੱਚ ਸਮਝਾਓ।",
+        "telugu": "సరే. ఇప్పుడు mic నొక్కి, దీన్ని నీ సొంత మాటల్లో వివరించు.",
+        "kannada": "ಸರಿ. ಈಗ mic ಒತ್ತಿ, ಇದನ್ನು ನಿನ್ನದೇ ಮಾತುಗಳಲ್ಲಿ ವಿವರಿಸು.",
     },
     "correct": {
         "hindi": "हाँ, बिल्कुल सही।",

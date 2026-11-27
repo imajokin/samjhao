@@ -104,10 +104,10 @@ class SessionRoutes(unittest.TestCase):
         self.assertIn("try again", body["text"])
 
     def test_female_voice_changes_the_phrase(self):
-        reply = client().post(
-            "/api/session/start", json={"topic_text": "Day and night, Class 8", "voice": "female"}
-        ).json()
-        self.assertIn("younger sister", reply["text"])
+        from app.tutor.strings import say
+
+        self.assertIn("देता", say("explain_lead", "hindi", "male"))
+        self.assertIn("देती", say("explain_lead", "hindi", "female"))
 
     def test_rate_limit(self):
         api = client(RATE_LIMIT_PER_MINUTE="2")

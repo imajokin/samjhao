@@ -32,6 +32,8 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Hints are written fresh on every turn by the judge, starting from what the learner just said. Ready hints from the start of the session are only the backup. | Shubham found the hints too weak. |
 | 27 Nov 2026 | The home screen now explains the idea in three lines before asking for a topic. | Shubham found the opening confusing ("why am I explaining?"). |
 | 27 Nov 2026 | The live link will be on Shubham's own domain, 14061406.xyz, through Cloudflare. Not on Railway, which is for office work. | Shubham's decision. The exact set-up is to be confirmed with him. |
+| 27 Nov 2026 | The class is chosen on the home screen (6 to 12, College, Other) before the mic can be used. Samjhao no longer asks "which class" in the conversation. | Shubham tried the app on 27 Nov: the class question wasted a turn. |
+| 27 Nov 2026 | The learner says the topic and explains it in one go. If the first words already contain an explanation, it is judged at once. The "explain it like I am your younger brother" turn is removed; a topic with no explanation gets one short line asking for it. Changes HANDOVER.md 6.1 and 6.5. | Shubham: he had already explained at the top and was asked two more questions before any judging. |
 
 ## Open (waiting for Shubham)
 

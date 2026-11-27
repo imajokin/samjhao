@@ -40,6 +40,7 @@ const TEXT = {
   tapToSpeak: "Mic दबाओ और बोलो · Tap the mic and speak",
   listening: "सुन रहा हूँ… रुकने के लिए फिर दबाओ · Listening… tap again to stop",
   speechFailed: "आवाज़ अभी काम नहीं कर रही। Type करके बताओ। / Speech is not working right now. Please type instead.",
+  pickClass: "पहले अपनी class चुनो · Choose your class first",
   micBlocked: "Mic की अनुमति नहीं मिली। Address bar के ताले (lock) पर tap करके Microphone को Allow करो, या नीचे type करो। / The mic is blocked. Tap the lock icon in the address bar and allow the microphone, or type below.",
 };
 
@@ -62,6 +63,22 @@ function show(screenId) {
     byId(id).hidden = id !== screenId;
   }
   window.scrollTo(0, 0);
+}
+
+// The class picked on the home screen, or "" if none yet.
+function chosenLevel() {
+  const picked = document.querySelector('input[name="level"]:checked');
+  return picked ? picked.value : "";
+}
+
+// Asks for the class if it is missing. Returns true when one is chosen.
+function haveLevel() {
+  if (chosenLevel()) return true;
+  const picker = byId("class-picker");
+  picker.classList.add("needed");
+  picker.scrollIntoView({ block: "center" });
+  byId("mic-label").textContent = TEXT.pickClass;
+  return false;
 }
 
 function chosenVoice() {
@@ -201,6 +218,7 @@ function listen() {
 }
 
 async function micTapped(where, redo) {
+  if (where === "home" && !Recorder.active && !haveLevel()) return;
   Player.unlock();
   if (Recorder.active) {
     Recorder.stop("tap");
@@ -346,7 +364,7 @@ function showReply(data) {
 
 async function beginTopic(topicText, languageCode, spoken) {
   const text = (topicText || "").trim();
-  if (!text || state.busy) return;
+  if (!text || state.busy || !haveLevel()) return;
   state.sessionId = null;
   state.lang = "hinglish";
   byId("tutor-text").textContent = "";
@@ -355,7 +373,7 @@ async function beginTopic(topicText, languageCode, spoken) {
   showProgress(null);
   show("talk");
   setBusy(true);
-  const reply = await Api.start(text, chosenVoice(), languageCode);
+  const reply = await Api.start(text, chosenVoice(), languageCode, chosenLevel());
   setBusy(false);
   if (!reply.ok) {
     showProblem(reply);
@@ -436,6 +454,10 @@ byId("talk-form").addEventListener("submit", (event) => {
 });
 
 byId("give-up").addEventListener("click", giveUp);
+byId("class-picker").addEventListener("change", () => {
+  byId("class-picker").classList.remove("needed");
+  if (state.voiceOn) byId("mic-label").textContent = TEXT.tapToSpeak;
+});
 byId("home-type-link").addEventListener("click", () => showTextBox(false));
 byId("talk-type-link").addEventListener("click", () => showTextBox(false));
 byId("new-topic").addEventListener("click", backHome);

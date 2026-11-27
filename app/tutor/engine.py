@@ -47,7 +47,8 @@ class Tutor:
         else:
             session.lang = guess_language(topic_text)
         session.topic_text = (topic_text or "").strip()
-        session.level = (level or "").strip()
+        session.first_words = session.topic_text
+        session.level = (level or session.level or "").strip()
         if not session.topic_text:
             session.phase = "topic"
             return self._reply(session, "retry_audio", _say(session, "not_heard"))
@@ -89,6 +90,12 @@ class Tutor:
         session.current_id = None
         session.not_heard_count = 0
         session.last_question = _say(session, "start_explain")
+
+        # If the learner already explained while naming the topic, judge that
+        # straight away. Asking them to explain again would waste a turn.
+        words, session.first_words = session.first_words, ""
+        if plan.has_explanation and word_count(words) >= MIN_FIRST_EXPLANATION_WORDS:
+            return self.turn(session, words)
         return self._reply(session, "start_explain", session.last_question)
 
     # ----- every later turn -----
@@ -153,10 +160,10 @@ class Tutor:
                 session.topic_text = session.pending_topic
                 return self._plan(session, confirmed=True)
             if is_no(transcript):
-                session.phase, session.level = "topic", ""
+                session.phase = "topic"
                 return self._reply(session, "narrow_topic", _say(session, "home_open"))
             # Neither yes nor no: treat what they said as the topic itself.
-        return self.start(session, transcript, session.level if session.phase == "confirm" else "")
+        return self.start(session, transcript, session.level)
 
     # ----- the counting rules -----
 

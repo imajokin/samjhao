@@ -477,3 +477,52 @@ body {
   padding: 10px 18px;
   cursor: pointer;
 }
+
+/* ----- Class choice on the home screen ----- */
+
+.classes {
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  margin: 0 0 18px;
+  padding: 10px 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.classes.needed { border-color: #c62828; background: #fdecea; }
+
+.classes legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.classes label { cursor: pointer; }
+
+.classes input {
+  position: absolute;
+  opacity: 0;
+}
+
+.classes span {
+  display: inline-block;
+  min-width: 48px;
+  padding: 10px 12px;
+  text-align: center;
+  font-weight: 700;
+  background: #ffffff;
+  border: 2px solid var(--brand);
+  border-radius: 12px;
+}
+
+.classes input:checked + span {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.classes input:focus-visible + span { outline: 3px solid var(--accent); }
+
+.pitch-en { margin-bottom: 0; }
+.how-steps { margin-top: 24px; }

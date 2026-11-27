@@ -334,7 +334,22 @@ class StartingATopic(unittest.TestCase):
             [TopicPlan("ok", "Moon", "Class 8", key_points=moon_points())],
             "Why the moon has phases, Class 8",
         )
-        self.assertIn("younger brother", reply["text"])
+        self.assertIn("explain it in your own words", reply["text"])
+
+    def test_explanation_given_with_the_topic_is_judged_at_once(self):
+        plan = TopicPlan("ok", "Moon", "Class 8", has_explanation=True, key_points=moon_points())
+        judge = FakeJudge(plans=[plan], turns=[verdict(covered=(1, 2), gap=3, follow_up="Q?")])
+        tutor, session = Tutor(judge), new_session()
+        reply = tutor.start(session, "Moon phases: " + LONG, "Class 8")
+        # No "now explain it" turn: the first reply is already the question.
+        self.assertEqual(reply["action"], "follow_up")
+        self.assertEqual(reply["text"], "Q?")
+        self.assertEqual(reply["progress"], {"done": 2, "total": 3})
+
+    def test_class_from_the_home_screen_is_passed_on(self):
+        judge = FakeJudge()
+        Tutor(judge).start(new_session(), "Why the moon has phases", "Class 9")
+        self.assertEqual(judge.plan_calls[-1][1], "Class 9")
 
 
 if __name__ == "__main__":

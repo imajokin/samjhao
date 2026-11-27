@@ -38,6 +38,7 @@ class LLMJudge:
             status=str(answer.get("status", "unsure")),
             topic_clean=str(answer.get("topic_clean", "")).strip(),
             level=str(answer.get("level", "")).strip(),
+            has_explanation=bool(answer.get("has_explanation")),
             narrow_subject=str(answer.get("narrow_subject", "")).strip(),
             nearby_topic=str(answer.get("nearby_topic", "")).strip(),
             key_points=points[:5],

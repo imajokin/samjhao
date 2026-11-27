@@ -29,20 +29,29 @@
       </p>
     </section>
 
-    <!-- What Samjhao is, in three lines, before anything is asked. -->
+    <!-- What Samjhao is, in one line, before anything is asked. -->
     <section class="pitch">
       <p class="pitch-hi" lang="hi">समझ आया है, या सिर्फ़ याद है? किसी को समझाकर देखो, तुरंत पता चल जाएगा।</p>
       <p class="pitch-en" lang="en">Did you really understand it, or only memorise it? Explain it to someone and you will know.</p>
-      <ol class="steps">
-        <li><strong>तुम समझाओ।</strong> <span>You explain any topic aloud, in your own words.</span></li>
-        <li><strong>Samjhao सुनता है</strong> और वही हिस्सा पूछता है जो छूट गया। <span>Samjhao listens and asks about the part you skipped or mixed up.</span></li>
-        <li><strong>अटक गए? Hint मिलेगा, जवाब नहीं।</strong> <span>Stuck? You get a hint, not the answer.</span></li>
-      </ol>
     </section>
 
+    <!-- Class is chosen here, once, so Samjhao never has to ask for it. -->
+    <fieldset class="classes" id="class-picker">
+      <legend>अपनी class चुनो · Choose your class</legend>
+      <label><input type="radio" name="level" value="Class 6"><span>6</span></label>
+      <label><input type="radio" name="level" value="Class 7"><span>7</span></label>
+      <label><input type="radio" name="level" value="Class 8"><span>8</span></label>
+      <label><input type="radio" name="level" value="Class 9"><span>9</span></label>
+      <label><input type="radio" name="level" value="Class 10"><span>10</span></label>
+      <label><input type="radio" name="level" value="Class 11"><span>11</span></label>
+      <label><input type="radio" name="level" value="Class 12"><span>12</span></label>
+      <label><input type="radio" name="level" value="College"><span>College</span></label>
+      <label><input type="radio" name="level" value="General adult learner"><span>Other</span></label>
+    </fieldset>
+
     <section class="prompt">
-      <p class="prompt-hi" lang="hi">आज क्या समझाओगे? Topic बोलो, और अपनी class बताओ।</p>
-      <p class="prompt-en" lang="en">What will you explain today? Say the topic and your class.</p>
+      <p class="prompt-hi" lang="hi">Mic दबाओ, topic बोलो और समझाना शुरू करो।</p>
+      <p class="prompt-en" lang="en">Tap the mic, say the topic and start explaining.</p>
     </section>
 
     <button class="mic" id="mic" type="button" disabled aria-label="Mic">
@@ -56,12 +65,10 @@
 
     <!-- The text box: the backup when the mic or speech is not available. -->
     <form class="typed" id="home-form" hidden>
-      <label for="home-input">Type your topic and class</label>
-      <div class="typed-row">
-        <input id="home-input" type="text" autocomplete="off" maxlength="300"
-               placeholder="Newton's third law, Class 11">
-        <button type="submit" class="send">Start</button>
-      </div>
+      <label for="home-input">Type the topic and your explanation</label>
+      <textarea id="home-input" rows="4" maxlength="3000"
+                placeholder="Newton's third law: har action ka..."></textarea>
+      <button type="submit" class="send wide">Start</button>
     </form>
 
     <fieldset class="voice" id="voice-picker" hidden>
@@ -73,10 +80,19 @@
     <section class="examples" aria-label="Example topics">
       <p class="examples-title">Not sure? Try one of these:</p>
       <div class="chips">
-        <button class="chip" type="button" disabled>Newton's third law, Class 11</button>
+        <button class="chip" type="button" disabled>Newton's third law</button>
         <button class="chip" type="button" disabled>Compound interest</button>
         <button class="chip" type="button" disabled>Why the moon has phases</button>
       </div>
+    </section>
+
+    <!-- How it works, below the mic so the mic stays near the top. -->
+    <section class="pitch how-steps">
+      <ol class="steps">
+        <li><strong>तुम समझाओ।</strong> <span>You explain any topic aloud, in your own words.</span></li>
+        <li><strong>Samjhao सुनता है</strong> और वही हिस्सा पूछता है जो छूट गया। <span>Samjhao listens and asks about the part you skipped or mixed up.</span></li>
+        <li><strong>अटक गए? Hint मिलेगा, जवाब नहीं।</strong> <span>Stuck? You get a hint, not the answer.</span></li>
+      </ol>
     </section>
 
     <p class="privacy">No login. Nothing is stored after a session.<br>

@@ -39,6 +39,7 @@ class TopicPlan:
     status: str  # ok, confirm, too_broad, not_a_concept, need_level, unsure
     topic_clean: str = ""
     level: str = ""
+    has_explanation: bool = False  # the learner already explained in their first words
     narrow_subject: str = ""
     nearby_topic: str = ""
     key_points: list[KeyPoint] = field(default_factory=list)
@@ -71,6 +72,7 @@ class Session:
     # topic -> level -> confirm -> explain -> follow_up -> summary
     phase: str = "topic"
     topic_text: str = ""  # what the learner said
+    first_words: str = ""  # their first words in full, in case they already explained
     topic: str = ""  # tidied topic
     level: str = ""
     pending_topic: str = ""  # a topic waiting for the learner's yes

@@ -27,7 +27,7 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 
 class StartBody(BaseModel):
-    topic_text: str = Field(default="", max_length=500)
+    topic_text: str = Field(default="", max_length=4000)
     level: str = Field(default="", max_length=80)
     voice: str = Field(default="male", max_length=10)
     language_code: str = Field(default="", max_length=10)

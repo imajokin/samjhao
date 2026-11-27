@@ -5,8 +5,8 @@
 // a pause after about 20 seconds (28 at the latest). Each piece is a complete
 // little recording that can be transcribed while the learner keeps talking.
 //
-// Recording stops on a second tap, after 4 seconds of silence once the
-// learner has spoken, or after 90 seconds.
+// Recording stops on a second tap, after 5 seconds of silence once the
+// learner has spoken (with a visible countdown), or after 90 seconds.
 
 const Recorder = {
   active: false,
@@ -28,11 +28,12 @@ const Recorder = {
   },
 
   // options: {onPiece(blob), onStop(reason, heardVoice), onLevel(0..1),
+  //           onQuiet(secondsLeft or null),
   //           maxSeconds, silenceSeconds}
   // Throws if the mic is refused or missing.
   async start(options) {
     if (this.active) return;
-    this._options = { maxSeconds: 90, silenceSeconds: 4, ...options };
+    this._options = { maxSeconds: 90, silenceSeconds: 5, ...options };
     this._stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
     });
@@ -89,6 +90,12 @@ const Recorder = {
 
     const quietFor = (now - state.lastVoiceAt) / 1000;
     const total = (now - state.startedAt) / 1000;
+    // Tell the page when a pause is about to end the recording, so the
+    // learner is never cut off without warning.
+    if (options.onQuiet) {
+      const pausing = state.heardVoice && quietFor >= 1.5;
+      options.onQuiet(pausing ? Math.max(1, Math.ceil(options.silenceSeconds - quietFor)) : null);
+    }
     if (state.heardVoice && quietFor >= options.silenceSeconds) return this.stop("silence");
     // If the meter reads nothing at all, it is broken on this device. Then we
     // cannot detect silence, so keep recording until the learner taps again.

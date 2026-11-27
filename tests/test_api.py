@@ -23,7 +23,7 @@ class FakeJudge:
     def __init__(self, fail=False):
         self.fail = fail
 
-    def make_key_points(self, topic, level, confirmed):
+    def make_key_points(self, topic, level, confirmed, conversation=""):
         if self.fail:
             raise ServiceDown("judging", "test")
         points = [

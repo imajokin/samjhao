@@ -30,11 +30,13 @@ class FakeJudge:
         self.plans = list(plans or [TopicPlan("ok", "Moon phases", "Class 8", key_points=moon_points())])
         self.turns = list(turns or [])
         self.plan_calls = []
+        self.conversations = []
         self.heard = []
         self.support_calls = 0
 
-    def make_key_points(self, topic, level, confirmed):
+    def make_key_points(self, topic, level, confirmed, conversation=""):
         self.plan_calls.append((topic, level, confirmed))
+        self.conversations.append(conversation)
         return self.plans.pop(0)
 
     def write_support(self, session, point):
@@ -397,10 +399,31 @@ class StartingATopic(unittest.TestCase):
         self.assertEqual(judge.plan_calls[-1], ("Photosynthesis", "Class 8", True))
 
     def test_saying_no_to_the_confirmation_goes_back_to_the_topic(self):
-        tutor, session, _, _ = self.run_start([TopicPlan("confirm", "Photosynthesis")])
+        again = TopicPlan("not_a_concept", reply="No problem. Which topic did you mean?")
+        tutor, session, _, _ = self.run_start([TopicPlan("confirm", "Photosynthesis"), again])
         reply = tutor.turn(session, "nahi")
         self.assertEqual(reply["action"], "narrow_topic")
+        self.assertEqual(reply["text"], "No problem. Which topic did you mean?")
         self.assertEqual(session.phase, "topic")
+
+    def test_the_opening_is_a_conversation_not_a_fixed_line(self):
+        chat = TopicPlan("not_a_concept", reply="अच्छा, क्या बताया ma'am ने आज?", reply_lang="hinglish")
+        ok = TopicPlan("ok", "Photosynthesis", "Class 8", has_explanation=True, key_points=moon_points())
+        judge = FakeJudge(plans=[chat, ok], turns=[ask((1, 2), 3, "Q?")])
+        tutor, session = Tutor(judge), new_session()
+        first = tutor.start(session, "मेरी ma'am ने मुझे आज बताया कि", "Class 8")
+        self.assertEqual(first["text"], "अच्छा, क्या बताया ma'am ने आज?")
+        second = tutor.turn(session, "plants sunlight se apna khana banate hain leaves mein")
+        # The model was shown the earlier lines, and both parts were judged together.
+        self.assertIn("मेरी ma'am ने मुझे आज बताया कि", judge.conversations[-1])
+        self.assertIn("क्या बताया ma'am ने आज", judge.conversations[-1])
+        self.assertEqual(second["action"], "follow_up")
+        self.assertIn("मेरी ma'am", judge.heard[-1])
+        self.assertIn("plants sunlight", judge.heard[-1])
+
+    def test_fixed_phrase_is_the_backup_when_the_model_writes_nothing(self):
+        _, _, _, reply = self.run_start([TopicPlan("not_a_concept")], "hello")
+        self.assertIn("topic", reply["text"])
 
     def test_unsure_topic_offers_a_nearby_one_and_never_guesses(self):
         _, session, _, reply = self.run_start(

@@ -16,11 +16,15 @@ class LLMJudge:
     def __init__(self, llm):
         self.llm = llm  # anything with ask_json(prompt, schema, name)
 
-    def make_key_points(self, topic: str, level: str, confirmed: bool) -> TopicPlan:
+    def make_key_points(
+        self, topic: str, level: str, confirmed: bool, conversation: str = ""
+    ) -> TopicPlan:
         prompt = prompts.KEY_POINTS_PROMPT.format(
             topic=topic,
-            level=level or "not given",
+            level=level or "not known",
             confirmed="yes" if confirmed else "no",
+            conversation=conversation or "(nothing yet; these are the learner's first words)",
+            language_rules=prompts.LANGUAGE_RULES,
         )
         answer = self.llm.ask_json(prompt, prompts.KEY_POINTS_SCHEMA, "key_points")
         points = []
@@ -39,6 +43,8 @@ class LLMJudge:
             topic_clean=str(answer.get("topic_clean", "")).strip(),
             level=str(answer.get("level", "")).strip(),
             has_explanation=bool(answer.get("has_explanation")),
+            reply_lang=str(answer.get("reply_lang") or "").strip(),
+            reply=str(answer.get("reply") or "").strip(),
             narrow_subject=str(answer.get("narrow_subject", "")).strip(),
             nearby_topic=str(answer.get("nearby_topic", "")).strip(),
             key_points=points[:4],

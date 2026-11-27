@@ -30,6 +30,7 @@ from app.tutor.strings import say
 
 MIN_FIRST_EXPLANATION_WORDS = 5
 MAX_HINTS = 2  # hints per key point before the app explains it
+HISTORY_FOR_START = 8  # earlier lines shown to the model while the topic is settled
 MAX_WORD_CHECKS = 2  # times per session we may ask "did you say X or Y?"
 MAX_CLARIFIES = 2  # times per point the learner may ask us something for free
 GAVE_UP = "(the learner tapped the button: I don't know)"
@@ -54,60 +55,71 @@ class Tutor:
     def start(
         self, session: Session, topic_text: str, level: str = "", language_code: str = ""
     ) -> dict:
-        """The learner has said a topic, and maybe a level."""
+        """The learner has said something to begin: a topic, a topic with its
+        explanation, or just a few words."""
         if language_code:
             session.lang = language_from_code(language_code, topic_text)
         else:
             session.lang = guess_language(topic_text)
         session.topic_text = (topic_text or "").strip()
-        session.first_words = session.topic_text
         session.level = (level or session.level or "").strip()
         if not session.topic_text:
             session.phase = "topic"
             return self._reply(session, "retry_audio", _say(session, "not_heard"))
+        # Everything said before the topic is settled counts toward the first
+        # explanation, in case they started explaining straight away.
+        session.first_words = _join(session.first_words, session.topic_text)
         return self._plan(session, confirmed=False)
 
     def _plan(self, session: Session, confirmed: bool) -> dict:
-        """Asks the judge for the key points and acts on its answer."""
-        plan = self.judge.make_key_points(session.topic_text, session.level, confirmed)
+        """Asks the model what the learner wants to explain, and for the key
+        points once that is clear. The model also writes what to say next;
+        the fixed phrases are only the backup."""
+        earlier = "\n".join(f"{who}: {text}" for who, text in session.history[-HISTORY_FOR_START:])
+        session.history.append(("learner", session.topic_text))
+        plan = self.judge.make_key_points(session.topic_text, session.level, confirmed, earlier)
+        if plan.reply_lang:
+            session.lang = plan.reply_lang
         if plan.level and not session.level:
             session.level = plan.level
         topic = plan.topic_clean or session.topic_text
 
         if plan.status == "confirm":
             session.phase, session.pending_topic = "confirm", topic
-            return self._reply(session, "confirm_topic", _say(session, "confirm_topic", topic=topic))
+            text = plan.reply or _say(session, "confirm_topic", topic=topic)
+            return self._reply(session, "confirm_topic", text)
         if plan.status == "too_broad":
             session.phase = "topic"
             subject = plan.narrow_subject or topic
-            return self._reply(session, "narrow_topic", _say(session, "narrow_topic", subject=subject))
+            text = plan.reply or _say(session, "narrow_topic", subject=subject)
+            return self._reply(session, "narrow_topic", text)
         if plan.status == "not_a_concept":
             session.phase = "topic"
-            return self._reply(session, "narrow_topic", _say(session, "home_open"))
+            return self._reply(session, "narrow_topic", plan.reply or _say(session, "home_open"))
         if plan.status == "need_level":
             session.phase, session.topic_text = "level", topic
-            return self._reply(session, "ask_level", _say(session, "ask_level"))
+            return self._reply(session, "ask_level", plan.reply or _say(session, "ask_level"))
         if plan.status == "unsure" or not plan.key_points:
             # Never guess the key points.
             if plan.nearby_topic:
                 session.phase, session.pending_topic = "confirm", plan.nearby_topic
-                return self._reply(
-                    session, "unsure_topic", _say(session, "unsure_topic", nearby=plan.nearby_topic)
-                )
+                text = plan.reply or _say(session, "unsure_topic", nearby=plan.nearby_topic)
+                return self._reply(session, "unsure_topic", text)
             session.phase = "topic"
-            return self._reply(session, "narrow_topic", _say(session, "home_open"))
+            return self._reply(session, "narrow_topic", plan.reply or _say(session, "home_open"))
 
         session.topic = topic
         session.points = plan.key_points
         session.phase = "explain"
         session.current_id = None
         session.not_heard_count = 0
-        session.last_question = _say(session, "start_explain")
+        session.last_question = plan.reply or _say(session, "start_explain")
 
         # If the learner already explained while naming the topic, judge that
         # straight away. Asking them to explain again would waste a turn.
         words, session.first_words = session.first_words, ""
         if plan.has_explanation and word_count(words) >= MIN_FIRST_EXPLANATION_WORDS:
+            session.history.pop()  # turn() records these words itself
             return self.turn(session, words)
         return self._reply(session, "start_explain", session.last_question)
 
@@ -211,20 +223,18 @@ class Tutor:
         return reply
 
     def _setup_turn(self, session: Session, transcript: str) -> dict:
-        """Turns before the explanation: a new topic, a level, or a yes/no."""
+        """Turns before the explanation starts: the learner is still telling
+        us what they want to explain, or answering a question about it."""
         if not transcript:
             return self._reply(session, "retry_audio", _say(session, "not_heard"))
         if session.phase == "level":
             session.level = transcript
             return self._plan(session, confirmed=False)
-        if session.phase == "confirm":
-            if is_yes(transcript):
-                session.topic_text = session.pending_topic
-                return self._plan(session, confirmed=True)
-            if is_no(transcript):
-                session.phase = "topic"
-                return self._reply(session, "narrow_topic", _say(session, "home_open"))
-            # Neither yes nor no: treat what they said as the topic itself.
+        if session.phase == "confirm" and is_yes(transcript):
+            session.topic_text = session.pending_topic
+            return self._plan(session, confirmed=True)
+        # Anything else is simply the next thing they said. The model reads it
+        # together with the conversation so far.
         return self.start(session, transcript, session.level)
 
     # ----- the counting rules -----

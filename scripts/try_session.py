@@ -11,6 +11,17 @@ import urllib.request
 BASE = "http://localhost:8000"
 
 SCRIPTS = {
+    "Opening chat: unfinished sentence, then the explanation": [
+        "मेरी Ma'am ने मुझे आज बताया कि",
+        "कि plants अपना खाना खुद बनाते हैं sunlight से",
+        "leaves में chlorophyll होता है और वो carbon dioxide लेते हैं और oxygen छोड़ते हैं",
+    ],
+    "Opening chat: greeting and a broad subject": [
+        "hello, kaise ho?",
+        "mujhe science padhni hai",
+        "achha theek hai, day and night kaise hote hain woh",
+    ],
+
     "Newton: stuck twice, then gets it": [
         "Newton's third law, Class 11",
         "Har action ka equal aur opposite reaction hota hai, isliye dono cancel ho jaate hain aur cheez move nahi karti.",
@@ -55,7 +66,7 @@ def main() -> None:
             continue
         print("\n" + "=" * 70 + "\n" + name)
         print("LEARNER:", turns[0])
-        reply, seconds = post("/api/session/start", {"topic_text": turns[0]})
+        reply, seconds = post("/api/session/start", {"topic_text": turns[0], "level": "Class 8"})
         print(f"TUTOR ({reply.get('action')}, {reply.get('lang')}, {seconds:.1f}s): {reply.get('text')}")
         session = reply.get("session_id")
         for said in turns[1:]:
@@ -71,6 +82,8 @@ def main() -> None:
                     print(f"   [{point['result']}] {point['statement']}")
                 break
         else:
+            if name.startswith("Opening"):
+                continue
             # Finish with the give-up button, to see the hints and the explanation.
             for _ in range(12):
                 if reply.get("action") == "done" or not session:

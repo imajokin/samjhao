@@ -40,6 +40,8 @@ class TopicPlan:
     topic_clean: str = ""
     level: str = ""
     has_explanation: bool = False  # the learner already explained in their first words
+    reply_lang: str = ""
+    reply: str = ""  # what the model wants to say next, in natural words
     narrow_subject: str = ""
     nearby_topic: str = ""
     key_points: list[KeyPoint] = field(default_factory=list)
@@ -117,7 +119,9 @@ class Judge(Protocol):
     with no keys.
     """
 
-    def make_key_points(self, topic: str, level: str, confirmed: bool) -> TopicPlan: ...
+    def make_key_points(
+        self, topic: str, level: str, confirmed: bool, conversation: str = ""
+    ) -> TopicPlan: ...
 
     def judge_turn(self, session: Session, transcript: str) -> Judgement: ...
 

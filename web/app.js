@@ -39,6 +39,7 @@ const TEXT = {
   slowDown: "थोड़ा रुको, फिर कोशिश करो। / Please wait a moment and try again.",
   tapToSpeak: "Mic दबाओ और बोलो · Tap the mic and speak",
   listening: "सुन रहा हूँ… भेजने के लिए फिर दबाओ · Listening… tap again to send",
+  pausing: (n) => "सोच रहे हो? बोलते रहो। चुप रहे तो " + n + " सेकंड में भेज दूँगा · Still thinking? Keep talking, or it sends in " + n + "s",
   partHeard: "तुम्हारी बात का कुछ हिस्सा सुनाई नहीं दिया। जो सुना वह नीचे लिखा है: उसे ठीक करके भेजो, या mic दबाकर फिर से बोलो। / Part of what you said was not heard. What was heard is in the box below: correct it and send, or tap the mic and say it again.",
   speechFailed: "आवाज़ अभी काम नहीं कर रही। Type करके बताओ। / Speech is not working right now. Please type instead.",
   pickClass: "पहले अपनी class चुनो · Choose your class first",
@@ -211,6 +212,13 @@ function listen() {
     const pieces = [];
     Recorder.start({
       onPiece: (blob) => pieces.push(Api.transcribe(blob)),
+      onQuiet: (secondsLeft) => {
+        // A pause is fine. Show how long before the recording is sent.
+        if (!Recorder.active) return;
+        const label = secondsLeft ? TEXT.pausing(secondsLeft) : TEXT.listening;
+        byId("mic-label").textContent = label;
+        byId("talk-mic-label").textContent = label;
+      },
       onStop: async (reason, heardVoice) => {
         if (reason === "cancel") {
           // The learner cancelled: forget the recording and send nothing.

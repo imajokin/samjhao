@@ -3,10 +3,15 @@
 **Project:** Samjhao, a voice tutor that listens
 **Owner:** Shubham Singh (solo entry, Builder #1621)
 **Event:** Build for Bharat (India Runs on Voice), a Scaler × Wispr Flow hackathon, Round 2
-**Written:** Fri 27 Nov 2026
+**Written:** Fri 27 Nov 2026 (version 2: keys-only judging, OpenRouter, questions before technology)
 **Hard deadline:** Mon 30 Nov 2026, 11:59 pm IST. One submission only. Everything must stay public and working until 2 Dec 2026.
 
 Read this whole file before writing any code. Section 1 is plain English. The sections after it get steadily more technical.
+
+**Two rules that override everything else in this file:**
+
+1. **Ask Shubham before committing to any technology.** The technology in this file is a proposal, not a decision. Section 4 lists the questions to ask him first.
+2. **Ask Shubham for a new OpenRouter key for this project.** Do not use any OpenRouter key you already have in memory, in your settings, or in another project, including the one used earlier for video generation.
 
 ---
 
@@ -46,10 +51,18 @@ Not the full product. The Round 2 brief asks for **one core flow that works end 
 
 > say a topic → explain it aloud → hear one follow-up question about the gap → answer → see the summary
 
-It runs in two modes:
+### How keys fit in
 
-- **Demo mode (no keys needed):** five ready topics, checked by simple rules. This exists because the reviewers start our code with no secret keys, and the app must still work for them.
-- **Full mode (keys added):** any topic, checked by a language model, with better Indian-language speech.
+Samjhao needs two paid services to work: one to turn speech into text and back (Sarvam), and one language model to judge the explanation (through OpenRouter). Both need secret keys. Shubham is happy to pay for these.
+
+The hackathon reviewers start our code **without** any keys. The rule is that the app must still start and show its main screen, and a feature that needs a key may show a "key not set" message. So:
+
+- **With keys (our live link, our video, our own testing):** everything works, for any topic.
+- **Without keys (reviewers starting the code):** the app starts, shows the home screen, explains what Samjhao does, and says clearly that keys are not set. It points to the live link and the video.
+
+There is **no rule-based "demo judge"**. Shubham decided against it. All judging is done by the language model.
+
+Because the tutor does not work without keys, the **live link and the video are the only places a reviewer can see it working**. Treat the live link as a priority, even though the rules call it optional.
 
 ---
 
@@ -63,7 +76,7 @@ These come from the official Round 2 brief. Breaking any item in 2.1 means the b
 |---|---|
 | Public GitHub repo | Create a new public repo. All code is written between 27 and 30 Nov. |
 | `docker-compose.yml` in the repo | `docker compose up` must start the app with one command. |
-| Starts with **no secret keys** | The main screen must appear with no keys set. A feature that needs a key shows a "key not set" message. Reviewers do not add keys. |
+| Starts with **no secret keys** | The main screen must appear with no keys set, with a clear "key not set" message. Reviewers do not add keys. Nothing may crash. |
 | About 300+ lines of our own code | Not a starter template with small changes. |
 | One submission only | "Save draft" exists, but "Submit build" is final. |
 | Links stay working until 2 Dec | Repo, video and live link must not change or break after submitting. |
@@ -73,7 +86,7 @@ These come from the official Round 2 brief. Breaking any item in 2.1 means the b
 1. **Code on GitHub** (required)
 2. **YouTube demo** (required): public or unlisted, 3 minutes or less, showing the product working
 3. **Pitch deck PDF** (required): up to 10 MB. The reviewers read the **words**, not the pictures. It must cover: problem and solution; who it is for and how many; what it depends on and the risks; launch plan
-4. **Live link** (optional): a small bonus if it works. We host it ourselves.
+4. **Live link** (optional in the rules, a priority for us): a small bonus if it works. We host it ourselves.
 
 ### 2.3 Form values
 
@@ -82,7 +95,14 @@ These come from the official Round 2 brief. Breaking any item in 2.1 means the b
 - Theme: **Inclusive education**
 - State: ask Shubham
 
-### 2.4 What the reviewers value
+### 2.4 What the rules say about tools
+
+- Any editor or AI tool is allowed. The rules name ChatGPT, Claude and Cursor as examples.
+- Nothing in the rules limits which paid services, models or speech tools the product uses.
+- The deck must list the voice tools, AI models and services we depend on, and what happens if they get costly or stop.
+- The only rule about keys is the no-keys start in 2.1.
+
+### 2.5 What the reviewers value
 
 No scoring rubric is published. The best signal is the brief's own four steps:
 
@@ -101,11 +121,11 @@ Round 1 counts for 10% of the Round 2 score. Prizes go by total score.
 
 There are three layers.
 
-1. **The browser** is what the learner sees and talks to. It shows the screens, listens through the microphone, and speaks the replies.
-2. **Our server** holds the rules of the conversation: what to ask next, when to give a hint, when to move on. It is one small program in one Docker container.
-3. **Outside services** are optional helpers that need keys: better speech-to-text, a language model to judge explanations, and better text-to-speech.
+1. **The browser** is what the learner sees and talks to. It shows the screens, records the learner's voice, and plays the replies.
+2. **Our server** holds the rules of the conversation: what to ask next, when to give a hint, when to move on. It also keeps the secret keys, so they never reach the browser. It is one small program in one Docker container.
+3. **Outside services** do the heavy work: Sarvam turns speech into text and text into speech, and a language model (reached through OpenRouter) judges the explanation.
 
-With no keys, layers 1 and 2 still give a complete working flow on five ready topics. With keys, layer 3 switches on and the same flow works for any topic.
+Without keys, layers 1 and 2 still start and show the home screen with a "keys not set" message.
 
 ### 3.2 Diagram (plain text, readable anywhere)
 
@@ -118,39 +138,37 @@ With no keys, layers 1 and 2 still give a complete working flow on five ready to
 |  BROWSER      web/  (plain HTML + CSS + JS, mobile-first, no build step) |
 |                                                                          |
 |  Screens:    Home -> Explain -> Follow-up loop -> Summary                |
-|                                                                          |
-|  Speech in:  (a) browser speech recognition          [no key]            |
-|              (b) record audio -> send to server      [full mode]         |
-|                                                                          |
-|  Speech out: (a) browser voice (speechSynthesis)     [no key]            |
-|              (b) play audio sent by the server       [full mode]         |
+|  Speech in:  records audio, sends it to our server                       |
+|  Speech out: plays the audio our server sends back                       |
+|  Backup:     a text box, if the mic or the speech service fails          |
+|  No keys:    home screen + "keys not set" message + links to the         |
+|              live demo and the video                                     |
 +--------------------------------------------------------------------------+
                                     |
-                        HTTPS, JSON (+ audio in full mode)
+                           HTTPS, JSON + audio
                                     v
 +--------------------------------------------------------------------------+
-|  SERVER       app/  (Python FastAPI, ONE Docker container, port 8000)    |
+|  SERVER       app/  (ONE Docker container, port 8000)                    |
 |                                                                          |
-|  /api/config       which mode is on (never returns a key)                |
-|  /api/topics       the five demo topics                                  |
+|  /api/config       which keys are set (never returns a key)              |
 |  /api/session/...  start, turn, summary                                  |
-|  /api/transcribe   audio -> text            [full mode only]             |
-|  /api/speak        text -> audio            [full mode only]             |
+|  /api/transcribe   audio -> text                                         |
+|  /api/speak        text -> audio                                         |
 |                                                                          |
-|            TUTOR ENGINE  (state machine: the rules of the talk)          |
-|                 |                              |                         |
-|                 v                              v                         |
-|          DEMO CHECKER                     LLM CHECKER                    |
-|          keyword rules over               writes key points, finds       |
-|          data/topics.json                 the gap, writes the            |
-|          [no key]                         follow-up question [key]       |
+|   TUTOR ENGINE  (state machine: the rules of the talk; decides           |
+|        |         hint / explain / move on / finish)                      |
+|        v                                                                 |
+|   JUDGE  (asks the language model: what are the key points,              |
+|           which one is missing or wrong, what question to ask)           |
 |                                                                          |
-|  SESSION STORE: in memory only, deleted after 30 minutes. No database.   |
+|   KEYS live here only.   SESSION STORE: memory only, 30 minutes.         |
+|   RATE LIMIT + DAILY CAP, because the live link spends real money.       |
 +--------------------------------------------------------------------------+
           |                         |                          |
           v                         v                          v
-  Sarvam speech-to-text     Language model API        Sarvam text-to-speech
-  [optional, key]           [optional, key]           [optional, key]
+  Sarvam speech-to-text      OpenRouter -> language     Sarvam text-to-speech
+  (SARVAM_API_KEY)           model for judging          (SARVAM_API_KEY)
+                             (OPENROUTER_API_KEY)
 ```
 
 ### 3.3 Same diagram in Mermaid (renders on GitHub)
@@ -160,63 +178,59 @@ flowchart TD
     L["Learner: Chrome on phone or laptop"]
     subgraph B["Browser: web/ (plain HTML, CSS, JS)"]
         UI["Screens: Home, Explain, Follow-up, Summary"]
-        BSTT["Browser speech recognition (no key)"]
-        REC["Audio recorder (full mode)"]
-        BTTS["Browser voice (no key)"]
+        REC["Audio recorder"]
+        PLAY["Audio player"]
+        TXT["Text box backup"]
     end
-    subgraph S["Server: app/ (FastAPI, one Docker container, port 8000)"]
+    subgraph S["Server: app/ (one Docker container, port 8000)"]
         API["API routes"]
         ENG["Tutor engine (state machine)"]
-        DEMO["Demo checker: keyword rules and topics.json"]
-        LLMC["LLM checker: key points, gap, follow-up"]
+        JUDGE["Judge: key points, gap, follow-up"]
         STORE["Session store (memory only, 30 min)"]
+        LIM["Rate limit and daily cap"]
     end
-    SSTT["Sarvam speech-to-text (optional key)"]
-    LLM["Language model API (optional key)"]
-    STTS["Sarvam text-to-speech (optional key)"]
+    SSTT["Sarvam speech-to-text"]
+    OR["OpenRouter: language model"]
+    STTS["Sarvam text-to-speech"]
     L --> UI
-    UI --> BSTT
     UI --> REC
-    UI --> BTTS
+    UI --> PLAY
+    UI --> TXT
     UI <--> API
+    API --> LIM
     API --> ENG
-    ENG --> DEMO
-    ENG --> LLMC
+    ENG --> JUDGE
     ENG --> STORE
     API --> SSTT
-    LLMC --> LLM
+    JUDGE --> OR
     API --> STTS
 ```
 
-### 3.4 The two modes
+### 3.4 What works with which keys
 
-| | Demo mode | Full mode |
-|---|---|---|
-| When | No LLM key set | `LLM_API_KEY` set |
-| Topics | Five ready topics | Any topic the learner says |
-| Who judges the explanation | Keyword rules (`demo_checker`) | Language model (`llm_checker`) |
-| Speech in | Browser speech recognition | Sarvam if `SARVAM_API_KEY` is set, else browser |
-| Speech out | Browser voice | Sarvam if `SARVAM_API_KEY` is set, else browser |
-| Home screen banner | "Demo mode: no API key is set, so 5 ready topics are available. Add a key to explain any topic." | None |
+| Keys set | What the learner gets |
+|---|---|
+| None | The app starts. Home screen, a short description of Samjhao, and a clear "keys not set" message with links to the live demo and the video. The mic button is visible but switched off. |
+| OpenRouter only | Judging works. Speech is off, so the learner types in the text box. A message says the Sarvam key is missing. Useful while building. |
+| Sarvam only | Speech works, but nothing can judge. A message says the OpenRouter key is missing. |
+| Both | The full voice flow, for any topic. |
 
-Speech and judging switch on separately. An LLM key alone gives any-topic judging with browser speech. A Sarvam key alone gives better speech on the five demo topics.
-
-### 3.5 One turn, step by step (full mode)
+### 3.5 One turn, step by step
 
 ```
 Learner taps mic and speaks
   -> browser records audio
   -> POST /api/transcribe  -> server -> Sarvam speech-to-text -> transcript
-  -> browser shows transcript with the "Galat suna? Phir se bolo" button
+  -> browser shows the transcript with the "Galat suna? Phir se bolo" button
   -> POST /api/session/{id}/turn  {transcript}
-       -> tutor engine -> LLM checker -> language model
+       -> tutor engine -> judge -> OpenRouter -> language model
        <- which points are covered, the first gap, the follow-up question
   <- {action, text, progress}
   -> POST /api/speak {text} -> server -> Sarvam text-to-speech -> audio
   -> browser plays the audio and shows the same text in large type
 ```
 
-In demo mode the two speech calls happen inside the browser, and the engine calls the demo checker instead of the language model.
+Three services are called in a row on every turn, so speed matters. Show a "thinking" line while waiting. Aim for the reply to start within about 4 seconds of the learner finishing, and measure it.
 
 ### 3.6 The conversation as a state machine
 
@@ -246,41 +260,94 @@ stateDiagram-v2
     Summary --> [*]
 ```
 
-`AskLevel`, `NarrowTopic` and `ConfirmTopic` exist only in full mode. In demo mode the learner picks one of five cards, so the topic and level are already known.
-
 ---
 
-## 4. Technology choices
+## 4. Technology: ask first, then commit
 
-These are recommendations made for speed and for a low risk of Docker failure. Change one only if there is a clear reason, and tell Shubham in plain words first.
+**Do not install, sign up for, or build on any technology until Shubham has answered the questions in 4.2.** He has asked to be questioned properly before choices are locked. The table in 4.1 is a starting proposal with reasons, so that the questions have something concrete to react to.
 
-| Part | Choice | Why |
+### 4.1 Already decided by Shubham
+
+| Part | Decision |
+|---|---|
+| Judging | A language model, with keys. **No rule-based or keyless judge.** |
+| How we reach the language model | **OpenRouter**, with a **new personal key made for this project**. Not the key used for video generation, and not any key found in Claude Code's memory or other projects. |
+| Which model judges | Open. Shubham's candidates are a GPT model and Claude Haiku. Choose by testing (section 10, milestone 0). |
+| Speech-to-text | **Sarvam**. Chosen partly because it covers many Indian languages beyond Hindi and English. |
+| Sarvam Dictate | **Not used.** Use Sarvam's regular speech-to-text. |
+| Budget | He is willing to spend money on keys. Still ask before each new paid service, and set spending limits. |
+
+### 4.2 Questions to ask Shubham before committing
+
+How to ask:
+
+- Ask in **small batches of three to five**, not all at once.
+- Use **plain language**. For each question give your recommended answer and one line on why.
+- Wait for his answer before building on that choice.
+- Write each decision in `DECISIONS.md` in the repo, with the date and the reason.
+- If a later finding changes a decision, tell him before switching.
+
+**Batch 1: keys and judging (ask first)**
+
+1. Please create a **new OpenRouter key for this project** and paste it into the `.env` file yourself (not into the chat). Can you also set a spending limit on that key, if OpenRouter offers one?
+2. Which models should we compare for judging? You mentioned a GPT model and Claude Haiku. Should we add one stronger model as a benchmark, to see what the best possible judging looks like?
+3. If two models disagree, what matters most to you: catching every mistake, replying fast, or low cost?
+4. What is the most you are willing to spend in total over these four days, across all keys?
+
+**Batch 2: speech**
+
+5. Please create a **Sarvam key** and paste it into `.env` yourself. Is Sarvam fine for the spoken replies too, or only for listening?
+6. What voice should Samjhao have? The idea says "friendly older sibling". Any preference between the voices Sarvam offers?
+7. For the transcript, should English words stay in English letters and Hindi words in Hindi script (code-mixed), or should everything be written exactly as spoken (verbatim)? Recommendation: test both on a real Hinglish explanation and pick the one the judge reads best.
+
+**Batch 3: languages and scope**
+
+8. For this prototype, should we promise only Hindi and English, or let Sarvam detect any language it supports? Recommendation: build so that other languages are not blocked, but only claim languages that a real speaker has tested.
+9. Which languages can you, or someone you know, test with a real speaker before Monday?
+10. Any topic at any level is confirmed. Should there be any limits, for example topics the tutor should politely decline?
+11. Should a session have a time limit or a maximum number of key points? Proposal: three to five key points.
+
+**Batch 4: how it is built and hosted**
+
+12. The proposal is a Python server with a plain HTML and JavaScript screen, in one Docker container, because it has the fewest parts that can fail when reviewers start it. Are you fine with that, or do you prefer something you already use?
+13. Where should the live link be hosted? It needs a host that runs a Docker container with HTTPS. Do you already have a hosting account or a domain you want to use?
+14. What should the no-keys screen say? Proposal: what Samjhao is, "keys are not set", and links to the live demo and the video.
+15. GitHub: what is your username, and is the repo name `samjhao` fine?
+
+**Batch 5: people and proof**
+
+16. Who are the three to five learners you can test with on Sunday, and what phones do they use?
+17. Who can do the fresh-download test on Monday?
+18. Which state should go on the submission form?
+19. Confirm that nothing is stored after a session and no transcripts are logged.
+
+### 4.3 Starting proposal (not final)
+
+| Part | Proposal | Why |
 |---|---|---|
 | Server | Python 3.12 + FastAPI + Uvicorn | Small, quick to write, easy to test |
-| Frontend | Plain HTML, CSS and JavaScript, served by the same server | No build step, so nothing extra can break when reviewers run Docker |
+| Screen | Plain HTML, CSS and JavaScript, served by the same server | No build step, so nothing extra can break under Docker |
 | Containers | One service in `docker-compose.yml` | One command, one port (8000) |
-| Storage | In-memory Python dict with a 30-minute expiry | The product promises "no login, nothing stored" |
-| Speech in, no key | Browser `SpeechRecognition` with `lang = "hi-IN"` | Works in Chrome with no key |
-| Speech in, with key | Sarvam speech-to-text (Saaras), code-mixed or verbatim output | Built for Hindi-English mixing and Indian accents |
-| Speech out, no key | Browser `speechSynthesis` with a Hindi voice | Works with no key |
-| Speech out, with key | Sarvam text-to-speech | More natural Hindi voice |
-| Judging, no key | Keyword rules over `topics.json` | Lets the full flow run for reviewers |
-| Judging, with key | Language model through an OpenAI-compatible chat API (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`) | One small adapter covers several providers, so the provider can be swapped by changing three settings |
+| Storage | In memory, 30-minute expiry | The product promises "no login, nothing stored" |
+| Speech in | Sarvam speech-to-text; the browser records audio and the server forwards it | Keeps the key on the server |
+| Speech out | Sarvam text-to-speech, played in the browser | One speech provider, one key |
+| Judging | OpenRouter's chat API, with the model name as a setting | Models can be swapped by changing one setting |
+| Backup input | A text box | If the mic or speech service fails, the learner is not stuck |
 
-### 4.1 Facts to check against live documentation before relying on them
+### 4.4 Facts to check against live documentation before relying on them
 
-These were read on 23 Nov 2026 from Sarvam's site and news coverage. They may be incomplete or out of date.
+Some of these were read on 23 Nov 2026 from Sarvam's site. Others are from general knowledge. None has been tested for this project.
 
-- Sarvam's REST transcription endpoint is described as being for quick responses **under 30 seconds** of audio. Our explanation turn is up to 90 seconds. If the limit holds, split the recording into chunks of about 25 seconds, or use Sarvam's streaming API.
-- Sarvam's speech-to-text has several output modes, including a **code-mixed** mode (English words in Latin letters, Hindi words in Devanagari) and a **verbatim** mode. We want one of these two.
-- **Sarvam Dictate** launched on 23 Nov 2026 (reported price ₹0.50 per audio minute, up to 1,000 custom words). It is built to turn speech into clean, finished text. That may hide the mistakes we need to hear. Test it with a deliberately wrong explanation before using it for the explanation step. If it smooths the mistake away, use the regular Saaras model in verbatim or code-mixed mode.
+- Sarvam's REST transcription endpoint was described as being for quick responses **under 30 seconds** of audio. Our explanation turn is up to 90 seconds. If the limit holds, split the recording into chunks of about 25 seconds, or use Sarvam's streaming API.
+- Sarvam's speech-to-text has several output modes, including a **code-mixed** mode and a **verbatim** mode.
 - Sarvam's docs advertise an MCP server for AI coding tools at `https://docs.sarvam.ai/_mcp/server`. Connecting it may be the fastest way to get correct API details.
-- Whether Sarvam's chat API is OpenAI-compatible is **not verified**. Check before assuming the LLM adapter can point at it.
-- Browser speech recognition needs Chrome (desktop or Android) and an internet connection. Microphone access needs a secure page: `http://localhost` counts as secure, and the live link must be HTTPS. Verify both on a real Android phone.
+- OpenRouter offers an OpenAI-compatible chat API. Check the current base URL, the exact model names for the candidates, the prices, and whether a spending limit can be set per key.
+- Microphone access in the browser needs a secure page. `http://localhost` counts as secure, and the live link must be HTTPS. Verify on a real Android phone.
+- Check which audio formats the phone's recorder produces and which formats Sarvam accepts. Convert on the server if they differ.
 
 ---
 
-## 5. Repository layout
+## 5. Repository layout (proposal)
 
 ```
 samjhao/
@@ -289,39 +356,37 @@ samjhao/
 ├── requirements.txt
 ├── .env.example            # every setting, all blank, with comments
 ├── .gitignore              # must include .env
-├── README.md               # what it is, how to run, modes, known limits
+├── README.md               # what it is, how to run, how to add keys, known limits
 ├── HANDOVER.md             # this file
+├── DECISIONS.md            # Shubham's answers to the questions in section 4.2
 ├── app/
-│   ├── main.py             # FastAPI app, routes, serves web/
-│   ├── config.py           # reads settings, decides the mode
+│   ├── main.py             # app, routes, serves web/
+│   ├── config.py           # reads settings, works out which keys are set
 │   ├── sessions.py         # in-memory store with expiry
-│   ├── ratelimit.py        # per-IP limit and daily cap (for the live link)
+│   ├── ratelimit.py        # per-IP limit and daily cap
 │   ├── tutor/
 │   │   ├── engine.py       # the state machine
-│   │   ├── models.py       # data shapes (pydantic)
-│   │   ├── demo_checker.py # keyword rules for the five topics
-│   │   ├── llm_checker.py  # calls the language model
+│   │   ├── models.py       # data shapes
+│   │   ├── judge.py        # calls the language model
 │   │   ├── prompts.py      # the prompt texts
 │   │   ├── strings.py      # every fixed phrase, Hindi and English
 │   │   └── language.py     # works out the learner's main language
-│   ├── providers/
-│   │   ├── llm.py          # OpenAI-compatible chat client
-│   │   ├── stt_sarvam.py
-│   │   └── tts_sarvam.py
-│   └── data/
-│       └── topics.json     # the five demo topics
+│   └── providers/
+│       ├── llm_openrouter.py
+│       ├── stt_sarvam.py
+│       └── tts_sarvam.py
 ├── web/
 │   ├── index.html
 │   ├── styles.css
 │   ├── app.js              # screens and flow
-│   ├── speech.js           # browser recognition, recorder, voices
+│   ├── audio.js            # recorder and player
 │   └── api.js              # calls to the server
 ├── scripts/
-│   └── try_prompts.py      # runs sample explanations through the prompts
+│   └── try_prompts.py      # runs sample explanations through the judge
 ├── tests/
-│   ├── test_engine.py
-│   ├── test_demo_checker.py
-│   └── test_keyless_start.py
+│   ├── test_engine.py      # uses a fake judge, so it runs with no keys
+│   ├── test_keyless_start.py
+│   └── fixtures/reference_topics.json
 └── docs/
     ├── pitch-deck.md       # deck text; exported to PDF
     ├── demo-script.md      # the 3-minute video script
@@ -331,25 +396,34 @@ samjhao/
 ### 5.1 docker-compose.yml requirements
 
 - One service, built from the local `Dockerfile`, mapping port `8000:8000`.
-- Pass settings with defaults that are empty, for example `SARVAM_API_KEY: ${SARVAM_API_KEY:-}`. Do **not** use a required `env_file`, because a fresh clone has no `.env` and the start would fail.
+- Pass settings with empty defaults, for example `OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}`. Do **not** use a required `env_file`, because a fresh download has no `.env` and the start would fail.
 - Add a health check on `/healthz`.
-- `docker compose up` on a fresh clone, with no `.env`, must reach a working home screen at `http://localhost:8000`.
+- `docker compose up` on a fresh download, with no `.env`, must reach the home screen at `http://localhost:8000`.
 
 ### 5.2 Settings (`.env.example`)
 
 | Setting | Purpose | Default |
 |---|---|---|
-| `LLM_API_KEY` | Turns on full mode | blank |
-| `LLM_BASE_URL` | OpenAI-compatible endpoint | blank |
-| `LLM_MODEL` | Model name. Take the exact name from the provider's current docs | blank |
-| `SARVAM_API_KEY` | Turns on Sarvam speech in and out | blank |
+| `OPENROUTER_API_KEY` | Turns on judging. **A new key made for this project.** | blank |
+| `LLM_MODEL` | Model name, taken from OpenRouter's current list | blank |
+| `LLM_BASE_URL` | OpenRouter's chat endpoint, from its current docs | blank |
+| `SARVAM_API_KEY` | Turns on speech in and out | blank |
 | `SARVAM_STT_MODEL` | Speech-to-text model name from Sarvam's docs | blank |
-| `SARVAM_STT_MODE` | `codemix` or `verbatim` | `codemix` |
+| `SARVAM_STT_MODE` | `codemix` or `verbatim` | decide by testing |
+| `SARVAM_TTS_VOICE` | The voice Shubham picks | blank |
+| `LIVE_DEMO_URL` | Shown on the no-keys screen | blank |
+| `VIDEO_URL` | Shown on the no-keys screen | blank |
 | `SESSION_TTL_MINUTES` | How long a session lives | `30` |
 | `RATE_LIMIT_PER_MINUTE` | Per-IP request limit | `30` |
-| `DAILY_REQUEST_CAP` | Stops a public link from running up a bill | `2000` |
+| `DAILY_REQUEST_CAP` | Stops the public link from running up a bill | `2000` |
 
-Keys live only on the server. They are never sent to the browser, never logged and never committed.
+### 5.3 Key handling
+
+- **Ask Shubham for a new OpenRouter key for this project.** Never read one from Claude Code's memory, from your own settings, from the environment of another project, or from any earlier work such as the video generation project.
+- Create `.env` from `.env.example` and ask Shubham to paste each key into the file himself. Keys should not be pasted into the chat.
+- `.env` is in `.gitignore` from the very first commit. Check the commit history for keys before the repo is made public.
+- Keys live only on the server. They are never sent to the browser and never logged.
+- On the live link, keep the rate limit and the daily cap on, and ask Shubham to set a spending limit on each key where the provider allows it.
 
 ---
 
@@ -359,18 +433,17 @@ Keys live only on the server. They are never sent to the browser, never logged a
 
 One screen at a time, one large mic button, no menus, no login.
 
-1. **Home.** The app says and shows the opening line.
-   - Demo mode: five topic cards. The learner taps a card or says its name. The demo-mode banner is visible.
-   - Full mode: the learner says any topic and their level. Three example chips are shown for learners who are unsure: "Newton's third law, Class 11", "Compound interest", "Why the moon has phases".
-2. **Explain.** The app says the "younger brother" line. The learner taps the mic and speaks for up to 90 seconds. A live transcript shows. Recording stops on a second tap or after 4 seconds of silence.
+1. **Home.** The app says and shows the opening line. The learner says any topic and their level. Three example chips are shown for learners who are unsure: "Newton's third law, Class 11", "Compound interest", "Why the moon has phases".
+   - If keys are missing, this screen still appears, with the message from 3.4 and the mic switched off.
+2. **Explain.** The app says the "younger brother" line. The learner taps the mic and speaks for up to 90 seconds. Recording stops on a second tap or after 4 seconds of silence. The transcript appears when it is ready.
 3. **Follow-up loop.** The app's question is shown in large text and spoken. Under the learner's last transcript is the re-record button. A small progress row shows how many key points are done, without revealing them.
 4. **Summary.** Lists the key points. Green tick: explained without a hint. Amber dot: needed a hint, or the app explained it. One button: "Naya topic".
 
-Design rules: large text, a mic button at least 96 px wide, strong contrast, works at 360 px width, everything shown is also spoken. Show a "thinking" line while waiting. Aim to reply within about 3 seconds of the learner finishing.
+Design rules: large text, a mic button at least 96 px wide, strong contrast, works at 360 px width, everything shown is also spoken.
 
 ### 6.2 Rules of the conversation
 
-1. Before the learner explains, fix a hidden list of **three to five key points** for the topic at their level. Demo mode has exactly four per topic. The list does not change during the session.
+1. Before the learner explains, fix a hidden list of **three to five key points** for the topic at their level. The list does not change during the session.
 2. Compare what the learner said with the key points **by meaning, not exact words**.
 3. Find the **first** key point that is missing or wrong.
 4. Ask **one** follow-up question about that point only, under 20 words, without giving the answer.
@@ -397,7 +470,7 @@ A friendly older sibling. Never say "wrong" or "galat" about the learner's answe
 - Reply in the language the learner used most in their last answer.
 - Keep technical terms in English, as textbooks do.
 - On screen, Hindi is in Devanagari and English words are in Latin letters.
-- The prototype covers Hindi and English only. Other Indian languages come later.
+- Whether the prototype goes beyond Hindi and English is an open question for Shubham (section 4.2, question 8). Build so that other languages are not blocked.
 
 ### 6.5 Fixed phrases (`strings.py`)
 
@@ -419,29 +492,31 @@ A friendly older sibling. Never say "wrong" or "galat" about the learner's answe
 | `unsure_topic` | इस topic पर मुझे पूरा भरोसा नहीं है। क्या हम {nearby} पर बात करें? | I am not fully sure about this topic. Shall we talk about {nearby}? |
 | `thinking` | सोच रहा हूँ… | Thinking… |
 | `new_topic_button` | नया topic | New topic |
-| `demo_banner` | Demo mode: API key set नहीं है, इसलिए 5 तैयार topics चल रहे हैं। | Demo mode: no API key is set, so 5 ready topics are available. Add a key to explain any topic. |
-| `use_chrome` | आवाज़ के लिए Chrome में खोलो। | Open this in Chrome to use voice. |
+| `keys_missing` | Keys set नहीं हैं, इसलिए Samjhao अभी सुन या जवाब नहीं दे सकता। | Keys are not set, so Samjhao cannot listen or reply yet. Try the live demo or watch the video. |
+| `service_down` | अभी थोड़ी दिक्कत आ रही है। थोड़ी देर में फिर से कोशिश करो। | Something is not working right now. Please try again in a little while. |
 
 ### 6.6 When things go wrong
 
 | Situation | What the app does |
 |---|---|
-| Nothing heard, or the first explanation is under five words | Say `not_heard`. Keep earlier progress. After two failed tries in a row, show a text box as a backup. |
+| Keys are not set | Home screen with `keys_missing` and the two links. No crash, no raw error. |
+| Nothing heard, or the first explanation is under five words | Say `not_heard`. Keep earlier progress. After two failed tries in a row, show the text box. |
 | A follow-up answer is short | That is fine. Short answers such as "sooraj se" are valid. The five-word rule applies **only** to the first explanation. Only an empty transcript counts as not heard. |
-| Topic not heard clearly (full mode) | Say `confirm_topic` and start only after a yes. |
+| Topic not heard clearly | Say `confirm_topic` and start only after a yes. |
 | Topic too broad, such as "physics" | Say `narrow_topic`. |
-| Accent or unusual pronunciation | Accept any pronunciation or spelling of a technical term, and its Hindi name: "photosynthesis", "fotosintesis", "prakash sanshleshan", "फोटोसिंथेसिस". |
+| Accent or unusual pronunciation | Accept any pronunciation or spelling of a technical term, and its Hindi name: "photosynthesis", "fotosintesis", "prakash sanshleshan". |
 | A key point depends on a word that may have been misheard | Say `confirm_word` before judging. |
 | The transcript is wrong | The `rerecord_button` under every transcript re-records only the last answer. |
 | "Pata nahi", or 10 seconds of silence after a question | Give the hint straight away. Do not use up a try. |
 | Off-topic talk | Say `off_topic` and repeat the last question. |
-| The app is not confident about a topic (full mode) | Say `unsure_topic`. Do not guess the key points. |
-| Browser has no speech recognition | Show `use_chrome` and the text box. |
-| An outside service fails or times out | Fall back to browser speech. If the language model fails, say so plainly and offer the five demo topics. Never show a raw error. |
+| The judge is not confident about a topic | Say `unsure_topic`. Do not guess the key points. |
+| Mic permission refused, or no mic | Show the text box with a short note on how to allow the mic. |
+| Sarvam or OpenRouter fails or is slow | Retry once. Then say `service_down` in plain words. Never show a raw error. If only speech failed, offer the text box. |
+| The daily cap is reached on the live link | Say plainly that today's demo limit is used up, and show the video link. |
 
 ---
 
-## 7. Server interface
+## 7. Server interface (proposal)
 
 All replies are JSON unless noted. No endpoint ever returns a key.
 
@@ -449,13 +524,14 @@ All replies are JSON unless noted. No endpoint ever returns a key.
 |---|---|---|
 | `GET /` | | the web app |
 | `GET /healthz` | | `{"ok": true}` |
-| `GET /api/config` | | `{"mode": "demo" or "full", "stt": "browser" or "sarvam", "tts": "browser" or "sarvam"}` |
-| `GET /api/topics` | | list of `{id, title_hi, title_en, level}` for the five demo topics. Key points are **not** included |
-| `POST /api/session/start` | `{topic_id}` (demo) or `{topic_text, level?}` (full) | `{session_id, action, text, lang, points_total}` |
+| `GET /api/config` | | `{"judging": true or false, "speech": true or false, "live_demo_url": "", "video_url": ""}` |
+| `POST /api/session/start` | `{topic_text, level?}` | `{session_id, action, text, lang, points_total}` |
 | `POST /api/session/{id}/turn` | `{transcript, heard_ok}` | `{action, text, lang, progress, summary?}` |
 | `GET /api/session/{id}/summary` | | `{points: [{statement, result}]}` |
-| `POST /api/transcribe` | audio file | `{transcript}` (full speech mode only) |
-| `POST /api/speak` | `{text, lang}` | audio (full speech mode only) |
+| `POST /api/transcribe` | audio file | `{transcript}` |
+| `POST /api/speak` | `{text, lang}` | audio |
+
+When a needed key is missing, the endpoint returns a clean `{"error": "keys_not_set", "missing": [...]}` reply, never a crash.
 
 `action` is one of:
 
@@ -465,11 +541,11 @@ All replies are JSON unless noted. No endpoint ever returns a key.
 
 ---
 
-## 8. Demo mode content (`topics.json`)
+## 8. Reference topics (for testing the judge, not for a rule-based checker)
 
-Five topics, four key points each. Shubham should read these before the build is submitted, because they were drafted quickly and a wrong key point would make the tutor approve a wrong explanation.
+These five topics are an answer key. Use them to check that the language model writes sensible key points and judges correctly. They are **not** used to judge learners at run time.
 
-Each key point in the file needs: `statement`, `concept_groups` (lists of accepted words in English, Roman Hindi and Devanagari), `wrong_signals` (words that mark a known mistake), `follow_up`, `hint` and `explanation`, each in Hindi and English.
+Shubham should read them once, because they were drafted quickly.
 
 ### Topic 1: Why the moon has phases (Class 8)
 
@@ -516,21 +592,11 @@ Known mistake: "ice floats because it is lighter" with no mention of density or 
 
 Known mistake: "the sun goes around the Earth".
 
-### 8.1 How the demo checker works
-
-- Clean the transcript: lower-case it and strip punctuation.
-- A key point counts as **covered** when at least one accepted word from **each** of its concept groups appears. Example for moon point 1: group A {reflect, परावर्तित, chamakta, रिफ्लेक्ट, roshni … sooraj se}, group B {sun, sunlight, sooraj, सूरज, सूर्य, सन}.
-- A key point counts as **wrong** when one of its `wrong_signals` appears, even if the concept groups match.
-- Otherwise it is **missing**.
-- Follow-ups, hints and explanations are fixed text from the file.
-
-**Known weak spot.** With `lang = "hi-IN"`, browser speech recognition often writes English words in Devanagari ("सनलाइट" for "sunlight"). Every concept group therefore needs the English word, the Roman Hindi word, the Devanagari Hindi word and the Devanagari spelling of the English word. This is the main reason demo mode is rule-based and limited. Full mode with Sarvam's code-mixed output handles this properly.
-
 ---
 
-## 9. Full mode: language model prompts
+## 9. The judge: language model prompts
 
-Two calls. Both must return JSON only. Validate the JSON and retry once if it is malformed.
+Two calls, both through OpenRouter. Both must return JSON only. Validate the JSON and retry once if it is malformed.
 
 ### 9.1 Call A: make the key points (once per session)
 
@@ -595,7 +661,7 @@ Two calls. Both must return JSON only. Validate the JSON and retry once if it is
 
 The engine, not the model, decides what happens next (hint, explain, move on, finish). The model only judges and writes the question. Hints and explanations come from Call A, so they are ready instantly.
 
-### 9.3 Sample explanations for testing the prompts
+### 9.3 Sample explanations for testing the judge
 
 Each has a known flaw. A good judge must catch it and must **not** approve it.
 
@@ -607,6 +673,17 @@ Each has a known flaw. A good judge must catch it and must **not** approve it.
 | 4 | Newton's third law, Class 11 | "Har action ka equal aur opposite reaction hota hai, isliye dono cancel ho jaate hain aur cheez move nahi karti." | The two forces act on different bodies, so they do not cancel. |
 | 5 | Compound interest | "Compound interest mein har saal same interest milta hai principal par, bas rate zyada hota hai." | Interest is earned on earlier interest too. |
 
+### 9.4 Choosing the judging model
+
+Run the five samples, plus one fully correct explanation, through each candidate model. For each model, record:
+
+- Did it catch every known flaw?
+- Did it approve the fully correct explanation without inventing a gap?
+- Is the follow-up question about the right point, short, and free of the answer?
+- How long did it take, and what did it cost per turn?
+
+Show Shubham the results side by side in plain language and let him pick. A model that approves a wrong explanation is ruled out, however fast or cheap it is.
+
 ---
 
 ## 10. Build order
@@ -615,25 +692,25 @@ Work in this order. After every milestone, run `docker compose up` with **no key
 
 | # | Milestone | Done when |
 |---|---|---|
-| 0 | **Prove the follow-up questions are good.** Write `scripts/try_prompts.py` and run the five samples in 9.3 through Calls A and B. | Shubham reads the output and agrees the questions hit the real gap. If they are weak, fix the prompts before building further. Needs an LLM key. |
-| 1 | **Skeleton that starts with no keys.** Repo, Dockerfile, compose file, `/healthz`, `/api/config`, a home screen with the demo banner. | Fresh clone + `docker compose up` shows the home screen. |
-| 2 | **Tutor engine + demo checker + tests.** No browser yet. | Tests cover: all points covered first time; one miss then covered; hint then covered; two misses then app explains; "pata nahi"; a wrong signal; summary colours. |
-| 3 | **Demo mode by voice in the browser.** Mic, browser recognition, browser voice, all four screens, the re-record button, the not-heard retry. | One demo topic can be finished start to end by speaking, in Chrome, with no keys. **This is the minimum that can be submitted.** |
-| 4 | **Full mode judging.** LLM adapter, Calls A and B, any topic, ask level, narrow topic, confirm topic, unsure topic. | A topic outside the five works end to end with an LLM key. |
-| 5 | **Sarvam speech in and out.** Recorder, `/api/transcribe`, `/api/speak`, fallbacks to browser speech. | Hinglish explanations come through with English terms intact. |
-| 6 | **Remaining failure cases.** Text box after two failed tries, silence timer, off-topic, word confirmation, no-recognition browsers. | Each row in 6.6 has been tried by hand. |
-| 7 | **Live link.** Deploy the same container to a host with HTTPS. Turn on the rate limit and daily cap. | The link works on an Android phone on mobile data. |
-| 8 | **Real users.** Three to five people try it without help. Notes go in `docs/user-tests.md`. | Fixes for anything that stopped a user. |
-| 9 | **Submission pieces.** README, deck PDF, 3-minute video, fresh-clone test by a friend. | Everything in section 12 is ticked. |
+| A | **Questions.** Ask batch 1 from section 4.2, then the other batches as each part comes up. | Answers are written in `DECISIONS.md`. |
+| 0 | **Prove the judge is good.** Write `scripts/try_prompts.py` and run section 9.4 across the candidate models. | Shubham has seen the comparison and picked a model. If the questions are weak, fix the prompts before building further. |
+| 1 | **Skeleton that starts with no keys.** Repo, Dockerfile, compose file, `/healthz`, `/api/config`, a home screen with the `keys_missing` message. This can be built while waiting for keys. | Fresh download + `docker compose up` shows the home screen. |
+| 2 | **Tutor engine + tests.** Tests use a fake judge, so they run with no keys. | Tests cover: all points covered first time; one miss then covered; hint then covered; two misses then app explains; "pata nahi"; summary colours; keys missing. |
+| 3 | **Judging end to end with typed input.** The judge, any topic, ask level, narrow topic, confirm topic, unsure topic. | A full session works in the browser using the text box and the OpenRouter key. |
+| 4 | **Voice in and out.** Recorder, `/api/transcribe`, `/api/speak`, the re-record button, the not-heard retry. | A full session works **by speaking**, on a phone, in Hinglish. **This is the minimum that can be submitted.** |
+| 5 | **Live link.** Deploy the same container to a host with HTTPS. Rate limit and daily cap on. | The link works on an Android phone on mobile data. |
+| 6 | **Remaining failure cases.** Silence timer, off-topic, word confirmation, service failures, mic refused. | Each row in 6.6 has been tried by hand. |
+| 7 | **Real users.** Three to five people try it without help. Notes go in `docs/user-tests.md`. | Fixes for anything that stopped a user. |
+| 8 | **Submission pieces.** README, deck PDF, 3-minute video, fresh-download test by a friend, links set on the no-keys screen. | Everything in section 12 is ticked. |
 
 ### 10.1 Suggested timing
 
-- **Fri 27 Nov:** milestones 0, 1 and 2.
-- **Sat 28 Nov:** milestones 3, 4 and 5.
-- **Sun 29 Nov:** milestones 6, 7 and 8. First draft of the deck.
-- **Mon 30 Nov:** milestone 9. Aim to submit by 9 pm, not 11:59 pm, because there is only one submission.
+- **Fri 27 Nov:** A, 0, 1 and 2.
+- **Sat 28 Nov:** 3 and 4. Start 5.
+- **Sun 29 Nov:** 5, 6 and 7. First draft of the deck.
+- **Mon 30 Nov:** 8. Aim to submit by 9 pm, not 11:59 pm, because there is only one submission.
 
-If time runs short, cut from the bottom: 6 before 5, 5 before 4. Never cut 1, 2, 3 or 9.
+If time runs short, cut milestone 6 first. Never cut 1, 4, 5 or 8.
 
 ---
 
@@ -645,10 +722,10 @@ Write it in `docs/pitch-deck.md` first, then export to PDF. The reviewers read t
 
 1. **Problem and solution.** Use section 1. Lead with "it listens instead of asking questions", because the hackathon's own education example is spoken quizzes and many entries will look like quiz bots.
 2. **Who it is for, and how many.** About 8.5 crore students in Classes 8 to 12. UDISE+ 2024-25: 3.72 crore in Classes 9 and 10, and 2.76 crore in Classes 11 and 12. The Class 8 share of about 2 crore is an **estimate**: one third of the 6.37 crore in Classes 6 to 8. Say it is an estimate. No verified number is available here for college students or adults, so do not invent one.
-3. **What it depends on, and the risks.** Speech-to-text and text-to-speech (Sarvam), a language model, and the browser. For each, say what happens if it gets costly or stops:
-   - Speech: the app already falls back to the browser's free speech tools, and speech providers sit behind one small interface, so they can be swapped.
-   - Language model: it sits behind an OpenAI-compatible interface, so the provider can be changed with three settings. Give the measured cost per session from real runs, not a guess.
-   - The main product risk, stated honestly: the tutor can judge wrongly. It may mishear a learner, or approve a wrong explanation. Mitigations: teacher-checked key points for common topics, saying plainly when unsure, always showing what was heard.
+3. **What it depends on, and the risks.** Sarvam for speech in and out, OpenRouter and the chosen language model for judging. For each, say what happens if it gets costly or stops:
+   - Judging: OpenRouter lets us change the model with one setting, so a costly or withdrawn model can be replaced quickly. Give the measured cost per session from real runs, not a guess.
+   - Speech: the speech provider sits behind one small part of the code, so it can be swapped. The text box keeps the app usable if speech is down.
+   - The main product risk, stated honestly: the tutor can judge wrongly. It may mishear a learner, or approve a wrong explanation. Mitigations: testing the judge against known-wrong explanations, teacher-checked key points for common topics, saying plainly when unsure, always showing what was heard.
 4. **Launch plan.** Start with school students in Hindi-speaking states. Reach first users through teachers and tuition centres who share a link on WhatsApp. First-year goal: 1 lakh regular users. Proposed targets (Shubham's, not benchmarks): 60% of hinted topics explained without a hint a week later; 40% still using it three evenings a week in week four; a 200-student pilot across four schools.
 
 Sources for the figures:
@@ -664,11 +741,11 @@ Draft the script in `docs/demo-script.md`. Suggested shape:
 - 2:10–2:40: one failure case handled well (noise and the re-record button), and a topic outside school science to show "any concept".
 - 2:40–3:00: who it is for, and what was built in four days.
 
-Show the product working. Do not fill the video with slides.
+Show the product working. Do not fill the video with slides. Since reviewers cannot run the tutor without keys, this video carries a lot of the proof.
 
 ### 11.3 README
 
-What Samjhao is; how to run it (`docker compose up`, then open `http://localhost:8000` in Chrome); the two modes and how to add keys; known limits; what was built during the hackathon.
+What Samjhao is; how to run it (`docker compose up`, then open `http://localhost:8000` in Chrome); what appears with no keys; how to add keys; the live demo and video links; known limits; what was built during the hackathon.
 
 ---
 
@@ -676,25 +753,24 @@ What Samjhao is; how to run it (`docker compose up`, then open `http://localhost
 
 **Code**
 - [ ] Public GitHub repo
-- [ ] `docker compose up` on a fresh clone, with no `.env`, shows the home screen
-- [ ] With no keys, a demo topic can be completed by voice in Chrome
-- [ ] The demo banner clearly says no key is set
+- [ ] `docker compose up` on a fresh download, with no `.env`, shows the home screen
+- [ ] With no keys, the screen says clearly that keys are not set, and links to the live demo and the video
 - [ ] No keys anywhere in the repo or its history
 - [ ] Well over 300 lines of our own code
-- [ ] A friend has cloned and started it on their own machine
+- [ ] A friend has downloaded and started it on their own machine
 
 **Product**
-- [ ] The core flow works end to end by speaking
+- [ ] The core flow works end to end by speaking, with keys
 - [ ] Three to five real users finished without help; notes saved
+
+**Live link**
+- [ ] HTTPS, works on a phone, rate limit and daily cap on, spending limits set, stays up until 2 Dec
 
 **Video**
 - [ ] YouTube, public or unlisted, 3:00 or less, product shown working
 
 **Deck**
 - [ ] PDF, under 10 MB, key points as real text, all four parts covered
-
-**Live link (optional)**
-- [ ] HTTPS, works on a phone, rate limit and daily cap on, stays up until 2 Dec
 
 **Form**
 - [ ] Extension of Round 1 idea · Samjhao · Inclusive education · State
@@ -707,8 +783,9 @@ What Samjhao is; how to run it (`docker compose up`, then open `http://localhost
 
 ## 13. How to work with Shubham
 
+- **Ask before committing to any technology.** Use the questions in section 4.2, in small batches, with your recommendation and the reason.
 - **Explain in plain, simple language first, then build up to the technical detail.** He leads a mentoring and customer-success team. Do not assume he reads code fluently.
-- He will often **dictate** his messages using Wispr Flow, so they may read like speech. The hackathon expects builders to use Wispr Flow while building.
+- He will often **dictate** his messages using Wispr Flow, so they may read like speech and a word may be misheard. If a sentence does not make sense, ask what he meant instead of guessing.
 - **Ask before** signing up for or choosing any paid service, and before anything that costs money.
 - Do not hand him checks you can run yourself. Run the test, settle it, and report the result.
 - When something cannot be done or is uncertain, say so plainly and give the next step.
@@ -717,58 +794,30 @@ What Samjhao is; how to run it (`docker compose up`, then open `http://localhost
 
 ### 13.1 Guardrails
 
+- Never use an OpenRouter key from memory, settings or another project. Ask for a new one.
 - Never commit a key. `.env` is in `.gitignore` from the first commit.
 - After every milestone, test the no-keys start again.
-- Do not add a login, a database, analytics, or languages beyond Hindi and English.
-- Do not narrow the product to school science. Demo mode has five school topics only because it has to run without a language model.
+- Do not build a rule-based or keyless judge.
+- Do not use Sarvam Dictate.
+- Do not add a login, a database or analytics.
+- Do not narrow the product to school science.
 - Store nothing after a session ends. Do not log transcripts. Some users will be children.
 - Do not change the repo, video or live link between submitting and 2 Dec.
 
 ---
 
-## 14. Decisions and tasks only Shubham can do
+## 14. Tasks only Shubham can do
 
-Ask about these at the start, in one short list.
+1. Create a **new OpenRouter key** for this project and paste it into `.env`.
+2. Create a **Sarvam key** and paste it into `.env`.
+3. Answer the questions in section 4.2.
+4. Pick the judging model after seeing the comparison.
+5. Create the public GitHub repo, or approve creating it.
+6. Choose the hosting for the live link.
+7. Read the 20 reference key points in section 8 and correct anything wrong.
+8. Find three to five learners for Sunday.
+9. Find a friend to do the fresh-download test on Monday.
+10. Record the demo video and upload it to YouTube.
+11. Wispr Flow verification: the dashboard showed "Not detected yet". This is not needed for Round 2, but it affects Round 1 prize eligibility. Use the "Update Wispr email" option if the Wispr sign-up used a different email.
 
-1. **Language model:** which provider and key to use for full mode.
-2. **Sarvam account:** sign up and create an API key.
-3. **GitHub:** create the public repo (suggested name: `samjhao`), or approve creating it.
-4. **Hosting for the live link:** any host that runs a Docker container with HTTPS.
-5. **Demo topics:** read the 20 key points in section 8 and correct anything wrong.
-6. **Test users:** find three to five learners for Sunday.
-7. **A friend** to do the fresh-clone test on Monday.
-8. **State** for the submission form.
-9. **Recording** the demo video and uploading it to YouTube.
-10. **Wispr Flow verification:** the dashboard showed "Not detected yet". This is not needed for Round 2, but it affects Round 1 prize eligibility. Use the "Update Wispr email" option if the Wispr sign-up used a different email.
-
----
-
-## 15. Starter prompt for Claude Code
-
-Put this file in a new, empty folder as `HANDOVER.md`. Open Claude Code in that folder and paste the text below.
-
-```
-I am building a hackathon project called Samjhao, and you are going to build it with me. I am working solo and the deadline is Monday 30 November 2026, 11:59 pm IST, with only one submission allowed.
-
-Start by reading HANDOVER.md in this folder from top to bottom. It has the idea in plain English, the rules we must meet, the architecture, the full product behaviour, the build order and the submission checklist. Treat it as the source of truth. If you think something in it is wrong or risky, tell me before changing course.
-
-After you have read it, do these things in order:
-
-1. Tell me in plain, simple language what we are building and how the pieces fit together, in about ten lines, so I know you have understood it. Start simple and then add the technical detail.
-
-2. Ask me the open questions from section 14 as one short list. Do not start anything that needs a paid service or a key until I answer.
-
-3. While you wait for keys, start Milestone 1 from section 10: a new project that starts with "docker compose up" and shows the home screen with no secret keys set. This is the most important rule in the hackathon. If the app does not start without keys, our build cannot move ahead.
-
-4. Then follow the build order in section 10. As soon as I give you a language model key, do Milestone 0 and show me the follow-up questions the tutor asks for the five sample explanations in section 9.3, because the whole product depends on those questions being good.
-
-How I want you to work:
-- Explain things to me in plain language first. I am not a professional developer.
-- I will often dictate my messages by voice, so they may sound like speech.
-- Check the live documentation for Sarvam and for the language model before relying on the details in section 4.1. Some of them were not verified.
-- After every milestone, test again that the app starts with no keys, and tell me the result.
-- Run checks yourself instead of asking me to run them. Tell me only what I truly have to do by hand.
-- Commit small and often with clear messages. Never commit a key.
-- Do not add anything that is not in the handover unless I ask. No login, no database, and only Hindi and English for now.
-- At the end of each working session, give me a short status: what is done, what is next, and anything I need to do.
-```
+The starter prompt for Claude Code is in a separate file, `STARTER_PROMPT.md`.

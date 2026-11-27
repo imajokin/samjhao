@@ -25,12 +25,12 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Public GitHub repo imajokin/samjhao, pushed from the first day. | Shubham approved; early pushes show the work was done during the hackathon. |
 | 27 Nov 2026 | Voices: "shubh" (male) and "ritu" (female), on Sarvam's bulbul:v3 model. | Shubham picked them by ear from five samples. These named voices speak all five languages. |
 | 27 Nov 2026 | Long recordings are cut in the browser, not on the server: the recorder starts a new piece at a pause after about 20 seconds (28 at most), and each piece is sent for transcription while the learner is still talking. | Same idea Shubham approved (pieces under 30 seconds), but it needs no audio-conversion software in the container and the transcript is ready sooner. Proposed by Claude; tell Shubham. |
+| 27 Nov 2026 | Transcript style: Sarvam's "codemix" mode. | Tested on 27 Nov: it writes Hindi in Hindi script and English words in English letters ("Plants sunlight से खाना बनाते हैं"), which is what the screen should show and what the judge reads best. The other modes wrote English words in Hindi script, or everything in English letters. |
 
 ## Open (waiting for Shubham)
 
 - Judging model: Haiku 5.5 credited a wrong explanation typed in English letters (27 Nov). Switch to Sonnet 5.5 (recommended), GPT-6 Luna, or stay?
 - Thinking off for preparing a topic only?
-- Transcript style (code-mixed or exactly as spoken): to be tested on a real recording.
 - Who can check the Punjabi, Telugu and Kannada phrases and test with a real speaker.
 - Topics to decline, session limits, hosting, people and proof: asked as each part comes up.
 

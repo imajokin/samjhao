@@ -664,3 +664,50 @@ body {
   color: var(--muted);
   font-size: 0.8rem;
 }
+
+/* ----- What to expect, said on the first screen ----- */
+
+.pitch-plan {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 2px solid var(--line);
+  font-size: 0.98rem;
+}
+
+.pitch-plan-en {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* ----- First screen, compact: everything down to the mic on one screenful ----- */
+
+#home { padding-top: 8px; }
+#home .brand h1 { font-size: 1.5rem; }
+#home .tagline { font-size: 0.85rem; margin-bottom: 8px; }
+#home .pitch { padding: 8px 12px; margin-bottom: 10px; }
+#home .pitch-hi { font-size: 0.98rem; line-height: 1.35; }
+#home .pitch-en { font-size: 0.8rem; line-height: 1.35; margin-top: 2px; }
+#home .pitch-plan { font-size: 0.9rem; line-height: 1.35; margin-top: 6px; padding-top: 6px; }
+#home .pitch-plan-en { font-size: 0.8rem; line-height: 1.35; }
+
+/* Voice: one slim row, no box. */
+#home .voice {
+  border: 0;
+  margin: 0 0 6px;
+  padding: 0;
+  gap: 14px;
+  align-items: center;
+}
+#home .voice legend { float: left; padding: 0; margin-right: 4px; font-size: 0.9rem; }
+#home .voice label { font-size: 0.95rem; }
+#home .voice input { width: 18px; height: 18px; }
+
+#home .classes { margin-bottom: 10px; padding: 4px 6px 8px; gap: 6px; }
+#home .classes legend { font-size: 0.92rem; }
+#home .classes span { min-width: 38px; padding: 6px 8px; font-size: 0.95rem; border-radius: 10px; }
+
+#home .prompt-hi { font-size: 1.05rem; line-height: 1.35; }
+#home .prompt-en { font-size: 0.82rem; margin: 2px 0 10px; }
+#home .mic { width: 96px; height: 96px; }
+#home .mic-label { margin: 10px 0 12px; font-size: 0.95rem; }

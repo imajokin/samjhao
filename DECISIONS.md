@@ -17,6 +17,7 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Jev is not used. | In the comparison it marked a fully correct explanation as incomplete, and its route is still alpha. |
 | 27 Nov 2026 | Samjhao asks about a point the learner got wrong before a point they merely skipped. | Shubham's decision; changes HANDOVER.md 6.2 rule 3 ("first missing or wrong"). It shows the learner the app really listened. |
 | 27 Nov 2026 | Total budget ceiling for the four days: $25 across all keys. | Shubham agreed. |
+| 27 Nov 2026 | The judging model runs with its "thinking" step switched off. | Measured on 27 Nov: preparing a topic drops from about 11 s to about 5 s and judging a turn from about 7 s to about 2.5 s, and it still caught every planted mistake and approved the correct explanation in 3 of 3 runs. Proposed by Claude; tell Shubham. |
 
 ## Open (waiting for Shubham)
 

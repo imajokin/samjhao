@@ -17,11 +17,19 @@ One line per decision, with the date and the reason. Nothing is decided until Sh
 | 27 Nov 2026 | Jev is not used. | In the comparison it marked a fully correct explanation as incomplete, and its route is still alpha. |
 | 27 Nov 2026 | Samjhao asks about a point the learner got wrong before a point they merely skipped. | Shubham's decision; changes HANDOVER.md 6.2 rule 3 ("first missing or wrong"). It shows the learner the app really listened. |
 | 27 Nov 2026 | Total budget ceiling for the four days: $25 across all keys. | Shubham agreed. |
-| 27 Nov 2026 | The judging model runs with its "thinking" step switched off. | Measured on 27 Nov: preparing a topic drops from about 11 s to about 5 s and judging a turn from about 7 s to about 2.5 s, and it still caught every planted mistake and approved the correct explanation in 3 of 3 runs. Proposed by Claude; tell Shubham. |
+| 27 Nov 2026 | The judging model keeps its "thinking" step on. | Shubham's decision after seeing the speed figures (about 11 s to prepare a topic and about 7 s per turn with thinking on, against 5 s and 2.5 s with it off). |
+| 27 Nov 2026 | Sarvam also provides Samjhao's spoken voice. | Shubham agreed: one speech provider, one key. |
+| 27 Nov 2026 | The learner chooses a male or a female voice. Shubham picks the two voices from a shortlist of five. | Shubham's decision. |
+| 27 Nov 2026 | The prototype is built for five languages: Hindi, English, Punjabi, Telugu and Kannada. Eight to ten languages is the later goal. | Shubham's decision; replaces the handover's Hindi and English focus. |
+| 27 Nov 2026 | Recordings longer than 30 seconds are cut into pieces of under 30 seconds on our server and the text is joined. | Sarvam refuses longer audio; Shubham accepted the recommendation. |
+| 27 Nov 2026 | Public GitHub repo imajokin/samjhao, pushed from the first day. | Shubham approved; early pushes show the work was done during the hackathon. |
 
 ## Open (waiting for Shubham)
 
-- Batch 2 (voice, transcript style), batch 3 (languages, limits), hosting and GitHub, people and proof: asked as each part comes up.
+- Which two voices (one male, one female) from the shortlist of five.
+- Transcript style (code-mixed or exactly as spoken): to be tested on a real recording.
+- Who can check the Punjabi, Telugu and Kannada phrases and test with a real speaker.
+- Topics to decline, session limits, hosting, people and proof: asked as each part comes up.
 
 ## Checked against live documentation (27 Nov 2026)
 

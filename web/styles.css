@@ -568,3 +568,17 @@ body {
 
 /* The earlier question fades while the next one is being prepared. */
 .tutor-text.waiting { opacity: 0.4; }
+
+/* ----- Cancel a recording ----- */
+
+.cancel {
+  font: inherit;
+  font-weight: 700;
+  margin: 0 0 12px;
+  background: #ffffff;
+  color: #c62828;
+  border: 2px solid #c62828;
+  border-radius: 999px;
+  padding: 10px 20px;
+  cursor: pointer;
+}

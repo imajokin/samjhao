@@ -113,7 +113,8 @@ const Recorder = {
     };
     recorder.onstop = () => {
       const blob = new Blob(chunks, { type: recorder.mimeType || mimeType || "audio/webm" });
-      if (blob.size && this._options.onPiece) this._options.onPiece(blob);
+      const cancelled = this._state.reason === "cancel";
+      if (blob.size && !cancelled && this._options.onPiece) this._options.onPiece(blob);
       if (this.active) {
         this._startPiece();
       } else {
@@ -123,6 +124,11 @@ const Recorder = {
     this._recorder = recorder;
     this._state.pieceStartedAt = performance.now();
     recorder.start();
+  },
+
+  // Throws the recording away. Nothing is handed over for judging.
+  cancel() {
+    this.stop("cancel");
   },
 
   stop(reason) {

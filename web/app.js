@@ -38,7 +38,7 @@ const TEXT = {
   sessionGone: "यह session पूरा हो चुका है। नया topic शुरू करो। / This session has ended. Please start a new topic.",
   slowDown: "थोड़ा रुको, फिर कोशिश करो। / Please wait a moment and try again.",
   tapToSpeak: "Mic दबाओ और बोलो · Tap the mic and speak",
-  listening: "सुन रहा हूँ… रुकने के लिए फिर दबाओ · Listening… tap again to stop",
+  listening: "सुन रहा हूँ… भेजने के लिए फिर दबाओ · Listening… tap again to send",
   partHeard: "तुम्हारी बात का कुछ हिस्सा सुनाई नहीं दिया। जो सुना वह नीचे लिखा है: उसे ठीक करके भेजो, या mic दबाकर फिर से बोलो। / Part of what you said was not heard. What was heard is in the box below: correct it and send, or tap the mic and say it again.",
   speechFailed: "आवाज़ अभी काम नहीं कर रही। Type करके बताओ। / Speech is not working right now. Please type instead.",
   pickClass: "पहले अपनी class चुनो · Choose your class first",
@@ -195,6 +195,9 @@ function setMic(mode) {
     button.classList.toggle("recording", mode === "recording");
     button.disabled = mode === "busy" || !state.voiceOn;
   }
+  // The cancel button is there only while recording.
+  byId("cancel-home").hidden = mode !== "recording";
+  byId("cancel-talk").hidden = mode !== "recording";
   const label = mode === "recording" ? TEXT.listening : TEXT.tapToSpeak;
   if (state.voiceOn) {
     byId("mic-label").textContent = label;
@@ -209,6 +212,11 @@ function listen() {
     Recorder.start({
       onPiece: (blob) => pieces.push(Api.transcribe(blob)),
       onStop: async (reason, heardVoice) => {
+        if (reason === "cancel") {
+          // The learner cancelled: forget the recording and send nothing.
+          resolve({ cancelled: true });
+          return;
+        }
         setMic("busy");
         const writing = phrase("thinking_writing", "तुम्हारी बात लिख रहा हूँ…");
         byId("mic-label").textContent = writing;
@@ -252,6 +260,7 @@ async function micTapped(where, redo) {
     return;
   }
   setMic("idle");
+  if (heard.cancelled) return;
 
   if (heard.failed) {
     // Part or all of the recording could not be turned into text. Never judge
@@ -491,6 +500,8 @@ byId("talk-form").addEventListener("submit", (event) => {
 });
 
 byId("give-up").addEventListener("click", giveUp);
+byId("cancel-home").addEventListener("click", () => Recorder.cancel());
+byId("cancel-talk").addEventListener("click", () => Recorder.cancel());
 byId("class-picker").addEventListener("change", () => {
   byId("class-picker").classList.remove("needed");
   if (state.voiceOn) byId("mic-label").textContent = TEXT.tapToSpeak;
